@@ -3,10 +3,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { ErrorMessage } from "~/components/ui/custom/errorMessage";
+import { ErrorMessage } from "~/components/common/errorMessage";
 import { useState } from "react";
 import { redirect, useNavigate, type LoaderFunctionArgs } from "react-router";
-import { userSession } from "~/utils/authentication";
+import { validateUserSession } from "~/utils/auth/validateUserSession";
 const LoginFormSchema = z.object({
     username: z.string().min(1, { message: "Username is required" }),
     password: z.string().min(1, { message: "Password is required" }),
@@ -26,7 +26,7 @@ interface LoginResponse {
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await userSession(request);
+  const user = await validateUserSession(request);
   
   if (user) {
     return redirect("/admin");

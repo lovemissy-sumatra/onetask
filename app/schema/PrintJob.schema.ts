@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const FileSchema = z.object({
+export const PrintFileSchema = z.object({
   name: z.string(),
   path: z.string(),
   fileSize: z.number().nonnegative(),
@@ -8,6 +8,7 @@ export const FileSchema = z.object({
   isColored: z.boolean(),
   paperSize: z.enum(["A4", "A3", "A2", "Letter"]),
   notes: z.string().optional(),
+  createdAt: z.date,
 });
 
 export const CustomerSchema = z.object({
@@ -20,7 +21,7 @@ export const CustomerSchema = z.object({
     .or(z.literal("")),
 });
 
-export const OrderFormSchema = z.object({
+export const PrintJobFormSchema = z.object({
   customer: CustomerSchema,
   useDefaultOptions: z.boolean(),
   defaultOptions: z.object({
@@ -28,14 +29,19 @@ export const OrderFormSchema = z.object({
     isColored: z.boolean(),
     paperSize: z.enum(["A4", "Letter", "Long"]),
   }),
-  files: z.array(FileSchema).min(1, { message: "Upload at least 1 file" }),
+  printFiles: z.array(PrintFileSchema).min(1, { message: "Upload at least 1 file" }),
+  createdAt: z.string().datetime(),
 });
 
-export type OrderFormType = z.infer<typeof OrderFormSchema>;
-export type OrderType = Omit<OrderFormType, "useDefaultOptions" | "defaultOptions"> & {
+export const statusEnum = z.enum(["Pending", "Processing", "Completed", "Cancelled"]);
+
+export type PrintJobStatusT = z.infer<typeof statusEnum>;
+export type PrintFileT = z.infer<typeof PrintFileSchema>;
+export type PrintJobFormT = z.infer<typeof PrintJobFormSchema>;
+export type PrintJobT = Omit<PrintJobFormT, "useDefaultOptions" | "defaultOptions"> & {
   id: string;
   referenceId: string;
-  status: 'pending' | 'paid';
+  status: PrintJobStatusT;
   isPaid: boolean;
 };[];
 

@@ -1,17 +1,19 @@
-import type { OrderType } from "~/schema/OrderForm.schema";
+import type { PrintJobT } from "~/schema/PrintJob.schema";
+import { getFormattedDateTime } from "~/utils/formatting/getFormattedDateTime";
 
-export let mockOrders: OrderType[] = [
+export let mockOrders: PrintJobT[] = [
   {
     id: "1",
     referenceId: "PJ123",
     isPaid: false,
-    status: "pending",
+    status: "Pending",
+    createdAt: getFormattedDateTime({ date: new Date() }),
     customer: {
       name: "Juan Dela Cruz",
       email: "juan.delacruz@gmail.com",
       phoneNumber: "09123456789",
     },
-    files: [
+    printFiles: [
       {
         name: "thesis.pdf",
         path: "/uploads/thesis.pdf",
@@ -20,6 +22,7 @@ export let mockOrders: OrderType[] = [
         isColored: false,
         paperSize: "A4",
         notes: "Print double-sided",
+        createdAt: new Date(),
       },
       {
         name: "resume.docx",
@@ -28,20 +31,22 @@ export let mockOrders: OrderType[] = [
         copies: 1,
         isColored: true,
         paperSize: "Letter",
+        createdAt: new Date(),
       },
     ],
   },
   {
     id: "2",
-    referenceId: "PJ123",
+    referenceId: "PJ124",
     isPaid: true,
-    status: "paid",
+    status: "Completed",
+    createdAt: getFormattedDateTime({ date: new Date() }),
     customer: {
       name: "Maria Santos",
       email: "maria.santos@yahoo.com",
       phoneNumber: "",
     },
-    files: [
+    printFiles: [
       {
         name: "poster.png",
         path: "/uploads/poster.png",
@@ -50,6 +55,7 @@ export let mockOrders: OrderType[] = [
         isColored: true,
         paperSize: "A3",
         notes: "Use glossy paper",
+        createdAt: new Date(),
       },
     ],
   },

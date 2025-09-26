@@ -17,11 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table"
-import type { OrderType } from "~/schema/OrderForm.schema"
+import { getFormattedDateTime } from "~/utils/formatting/getFormattedDateTime"
+import { PrintJobDialog } from "./PrintJobDialog"
+import type { PrintJobT } from "~/schema/PrintJob.schema"
+import { useAlert } from "~/providers/AlertProvider"
 
-export const columns: ColumnDef<OrderType>[] = [
+export const columns: ColumnDef<PrintJobT>[] = [
   {
-    accessorKey: "referenceId",
+    accessorKey: "referenceCode",
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -66,11 +69,10 @@ export const columns: ColumnDef<OrderType>[] = [
       const status = row.getValue("status") as string
       return (
         <span
-          className={`px-2 py-1 rounded text-xs ${
-            status === "paid"
-              ? "bg-green-100 text-green-700"
-              : "bg-yellow-100 text-yellow-700"
-          }`}
+          className={`px-2 py-1 rounded text-xs ${status === "paid"
+            ? "bg-green-100 text-green-700"
+            : "bg-yellow-100 text-yellow-700"
+            }`}
         >
           {status}
         </span>
@@ -89,10 +91,37 @@ export const columns: ColumnDef<OrderType>[] = [
       )
     },
   },
+  {
+    accessorKey: "createdAt",
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() =>
+          column.toggleSorting(column.getIsSorted() === "asc")
+        }
+      >
+        Date
+      </Button>
+    ),
+    cell: ({ row }) => {
+      const date = row.getValue<string>("createdAt")
+      return getFormattedDateTime({ date })
+    },
+  },
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      return (
+        <PrintJobDialog row={row} />
+      )
+    }
+  }
 ]
 
-export function OrdersTable({ data }: { data: OrderType[] }) {
+export function OrdersTable({ data }: { data: PrintJobT[] }) {
   const [sorting, setSorting] = useState<SortingState>([])
+  const { showAlert } = useAlert();
 
   const table = useReactTable({
     data,
@@ -118,9 +147,9 @@ export function OrdersTable({ data }: { data: OrderType[] }) {
                     {header.isPlaceholder
                       ? null
                       : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -163,7 +192,13 @@ export function OrdersTable({ data }: { data: OrderType[] }) {
         </Button>
         <Button
           size="sm"
-          onClick={() => table.nextPage()}
+          onClick={() => {
+            table.nextPage(); showAlert({
+              type: "success",
+              title: "Profile Updated",
+              description: "Your changes were saved successfully.",
+            });
+          }}
           disabled={!table.getCanNextPage()}
         >
           Next

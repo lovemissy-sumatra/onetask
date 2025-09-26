@@ -1,10 +1,11 @@
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { OrderFormSchema, type OrderFormType } from "~/schema/OrderForm.schema";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "~/components/ui/select";
-import { ErrorMessage } from "~/components/ui/custom/errorMessage";
+import { ErrorMessage } from "~/components/common/errorMessage";
+import { PrintJobFormSchema, type PrintJobFormT, type PrintJobT } from "~/schema/PrintJob.schema";
+import { getFormattedDateTime } from "~/utils/formatting/getFormattedDateTime";
 
 
 export default function Home() {
@@ -15,24 +16,24 @@ export default function Home() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<OrderFormType>({
-    resolver: zodResolver(OrderFormSchema),
+  } = useForm<PrintJobFormT>({
+    resolver: zodResolver(PrintJobFormSchema),
     defaultValues: {
       customer: { name: "", email: "", phoneNumber: "" },
       useDefaultOptions: true,
       defaultOptions: { copies: 1, isColored: false, paperSize: "A4" },
-      files: [],
+      printFiles: [],
     },
   });
 
   const { fields: files, append, remove } = useFieldArray({
     control,
-    name: "files",
+    name: "printFiles",
   });
 
   const useDefault = watch("useDefaultOptions");
 
-  const onSubmit = (data: OrderFormType) => {
+  const onSubmit = (data: PrintJobFormT) => {
     console.log("Form Data:", data);
     reset();
   };
@@ -48,6 +49,7 @@ export default function Home() {
           isColored: false,
           paperSize: "A4",
           notes: "",
+          createdAt: getFormattedDateTime({date: new Date})
         });
       });
     }
@@ -94,7 +96,7 @@ export default function Home() {
             multiple
             onChange={handleFileUpload}
           />
-          <ErrorMessage message={errors.files?.message as string} />
+          <ErrorMessage message={errors.printFiles?.message as string} />
         </div>
 
         <div className="flex items-center gap-2">
@@ -160,27 +162,27 @@ export default function Home() {
               <h4 className="font-medium">Number of copies:</h4>
               <Input
                 type="number"
-                {...register(`files.${index}.copies`, { valueAsNumber: true })}
+                {...register(`printFiles.${index}.copies`, { valueAsNumber: true })}
                 placeholder="Copies"
               />
-              <ErrorMessage message={errors.files?.[index]?.copies?.message} />
+              <ErrorMessage message={errors.printFiles?.[index]?.copies?.message} />
 
 
               <div className="flex items-center gap-2">
-                <input type="checkbox" {...register(`files.${index}.isColored`)} />
+                <input type="checkbox" {...register(`printFiles.${index}.isColored`)} />
                 <Label>Colored</Label>
               </div>
-              <ErrorMessage message={errors.files?.[index]?.isColored?.message} />
+              <ErrorMessage message={errors.printFiles?.[index]?.isColored?.message} />
 
-              <select {...register(`files.${index}.paperSize`)}>
+              <select {...register(`printFiles.${index}.paperSize`)}>
                 <option value="A4">A4</option>
                 <option value="A3">A3</option>
                 <option value="A2">A2</option>
                 <option value="Letter">Letter</option>
               </select>
-              <ErrorMessage message={errors.files?.[index]?.paperSize?.message} />
+              <ErrorMessage message={errors.printFiles?.[index]?.paperSize?.message} />
 
-              <Input {...register(`files.${index}.notes`)} placeholder="Notes (optional)" />
+              <Input {...register(`printFiles.${index}.notes`)} placeholder="Notes (optional)" />
 
               <button
                 type="button"
