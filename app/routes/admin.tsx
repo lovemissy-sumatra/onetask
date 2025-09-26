@@ -4,8 +4,8 @@ import {
   redirect,
   useLoaderData,
   useRevalidator,
-  Form,
   useSubmit,
+  useNavigate,
   type LoaderFunctionArgs,
 } from "react-router";
 import {
@@ -19,99 +19,65 @@ import {
 } from "lucide-react";
 import type { PrintJobT } from "~/schema/PrintJob.schema";
 import { StatCard } from "~/components/common/StatCard";
-import { validateUserSession } from "~/utils/auth/validateUserSession";
+import { calculateStats, StatusOverview } from "~/components/common/StatusOverview";
+import { validateUserSession } from "~/services/auth/validateUserSession";
+import { logoutUser } from "~/services/auth/logoutUser";
+import apiUrl from "~/utils/api/apiUrl";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const user = await validateUserSession(request);
-  if (!user) return redirect("/login");
+  const authResult = await validateUserSession(request);
 
-  const printjobs = await axiosClient("/api/printjob");
-  return { user, printjobs: printjobs.data.data as PrintJobT[] };
+
+  if (!authResult.success || !authResult.user) {
+    throw redirect("/login");
+  }
+
+  try {
+    const printjobs = await axiosClient("/api/printjob");
+    return {
+      user: authResult.user,
+      printjobs: printjobs.data.data as PrintJobT[]
+    };
+  } catch (error) {
+    throw redirect("/login");
+  }
 }
 
-const calculateStats = (printjobs: PrintJobT[]) => {
-  const totalJobs = printjobs.length;
-  const pendingJobs = printjobs.filter((job) => job.status === "Pending").length;
-  const processingJobs = printjobs.filter((job) => job.status === "Processing").length;
-  const completedJobs = printjobs.filter((job) => job.status === "Completed").length;
-  const cancelledJobs = printjobs.filter((job) => job.status === "Cancelled").length;
+export async function action({ request, params }: LoaderFunctionArgs) {
+  const formData = await request.formData();
+  const intent = formData.get("_intent");
+  console.log({ intent })
 
-  const totalFiles = printjobs.reduce(
-    (sum, job) => sum + job.printFiles.length,
-    0
-  );
-  const coloredFiles = printjobs.reduce(
-    (sum, job) => sum + job.printFiles.filter((file) => file.isColored).length,
-    0
-  );
 
-  const totalPages = printjobs.reduce(
-    (sum, job) =>
-      sum + job.printFiles.reduce((fileSum, file) => fileSum + file.copies, 0),
-    0
-  );
-  const coloredPages = printjobs.reduce(
-    (sum, job) =>
-      sum +
-      job.printFiles.reduce(
-        (fileSum, file) => fileSum + (file.isColored ? file.copies : 0),
-        0
-      ),
-    0
-  );
+  if (intent === "status") {
+    const status = formData.get("status");
+    const jobId = formData.get("jobId");
 
-  const uniqueCustomers = new Set(printjobs.map((job) => job.customer.email)).size;
 
-  const today = new Date().toDateString();
-  const todayJobs = printjobs.filter(
-    (job) => new Date(job.createdAt).toDateString() === today
-  ).length;
+    await fetch(`${apiUrl}/api/printjob/${jobId}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(status),
+    });
+  }
 
-  const revenue = printjobs.reduce((sum, job) => {
-    const jobRevenue = job.printFiles.reduce((fileSum, file) => {
-      const pagePrice = file.isColored ? 0.25 : 0.1;
-      return fileSum + file.copies * pagePrice;
-    }, 0);
-    return sum + jobRevenue;
-  }, 0);
+  if (intent === "pay") {
+    const jobId = formData.get("jobId");
+    await fetch(`${apiUrl}/api/printjob/${jobId}/pay`, { method: "PUT" });
+  }
 
-  return {
-    totalJobs,
-    pendingJobs,
-    processingJobs,
-    completedJobs,
-    cancelledJobs,
-    totalPages,
-    coloredPages,
-    uniqueCustomers,
-    todayJobs,
-    revenue: revenue.toFixed(2),
-    totalFiles,
-    coloredFiles,
-  };
-};
+  if (intent === "download") {
+    const fileId = formData.get("fileId") as string;
+    await fetch(`${apiUrl}/api/printfile/${fileId}/downloaded`, { method: "PUT" });
 
-const StatusOverview = ({ stats }: { stats: ReturnType<typeof calculateStats> }) => (
-  <div className="bg-white/10 rounded-lg p-6 border border-white/20">
-    <h3 className="text-lg font-semibold text-white mb-4">Job Status Overview</h3>
-    <div className="space-y-3">
-      {[
-        { label: "Pending", value: stats.pendingJobs, color: "bg-yellow-500" },
-        { label: "Processing", value: stats.processingJobs, color: "bg-blue-500" },
-        { label: "Completed", value: stats.completedJobs, color: "bg-green-500" },
-        { label: "Cancelled", value: stats.cancelledJobs, color: "bg-red-500" },
-      ].map((item) => (
-        <div key={item.label} className="flex justify-between items-center">
-          <div className="flex items-center">
-            <div className={`w-3 h-3 ${item.color} rounded-full mr-3`} />
-            <span className="text-gray-300">{item.label}</span>
-          </div>
-          <span className="text-white font-medium">{item.value}</span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
+    const fileUrl = `${apiUrl}/uploaded/files/...`;
+
+    return redirect(fileUrl);
+  }
+
+
+  return null;
+}
 
 export default function Admin() {
   const { user, printjobs } = useLoaderData() as {
@@ -121,7 +87,12 @@ export default function Admin() {
 
   const stats = calculateStats(printjobs);
   const revalidator = useRevalidator();
-  const submit = useSubmit();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logoutUser();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <div className="p-6 bg-white/5 rounded-xl h-full min-h-screen">
@@ -131,7 +102,7 @@ export default function Admin() {
             Admin Dashboard
           </h1>
           <p className="text-gray-400">
-            Welcome back, <span className="text-white font-medium">{user.username}</span>
+            Welcome back, <span className="text-white font-medium">{user?.username}</span>
           </p>
         </div>
         <div className="flex gap-3">
@@ -142,14 +113,13 @@ export default function Admin() {
             <RefreshCcw size={16} />
             Reload Data
           </button>
-          <form method="post" action="/logout">
-            <button
-              type="submit"
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors text-sm"
-            >
-              Logout
-            </button>
-          </form>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
         </div>
       </div>
 
@@ -183,14 +153,13 @@ export default function Admin() {
           value={stats.totalFiles.toLocaleString()}
           icon={Printer}
           color="bg-indigo-500"
-          subtitle={`${stats.coloredFiles} colored, ${stats.totalFiles - stats.coloredFiles
-            } B&W`}
+          subtitle={`${stats.coloredFiles} colored, ${stats.totalFiles - stats.coloredFiles} B&W`}
         />
         <StatCard
           title="Completion Rate"
           value={`${stats.totalJobs > 0
-              ? Math.round((stats.completedJobs / stats.totalJobs) * 100)
-              : 0
+            ? Math.round((stats.completedJobs / stats.totalJobs) * 100)
+            : 0
             }%`}
           icon={CheckCircle}
           color="bg-green-600"

@@ -1,25 +1,12 @@
-import { redirect, type ActionFunctionArgs } from "react-router";
-import axiosClient from "~/utils/api/axiosClient";
+import { redirect } from "react-router";
+import { logoutUser } from "~/services/auth/logoutUser";
 
-export async function action({ request }: ActionFunctionArgs) {
-    try {
-        await axiosClient.post("/api/adminauth/logout", null, {
-            headers: {
-                Cookie: request.headers.get("Cookie") || "",
-            },
-        });
-    } catch (err) {
-        console.error("Logout failed:", err);
-    }
-
-    return redirect("/login", {
-        headers: {
-            "Set-Cookie": "AdminAuthToken=; HttpOnly; Path=/; Max-Age=0; SameSite=None; Secure",
-        },
-    });
-
+export async function action() {
+  await logoutUser();
+  return redirect("/login");
 }
 
-export function loader() {
-    return redirect("/");
+export async function loader() {
+  await logoutUser();
+  return redirect("/login");
 }

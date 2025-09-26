@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
     Dialog,
     DialogTrigger,
@@ -17,13 +16,14 @@ import {
     SelectValue,
 } from "../ui/select";
 import type { Row } from "@tanstack/react-table";
-import type { PrintJobStatusT, PrintJobT } from "~/schema/PrintJob.schema";
+import type { PrintJobT } from "~/schema/PrintJob.schema";
 import { getFormattedDateTime } from "~/utils/formatting/getFormattedDateTime";
+import { useNavigation, useRevalidator } from "react-router";
 
 export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
-    const [downloaded, setDownloaded] = useState<Record<number, boolean>>({});
-    const [isPaid, setIsPaid] = useState(row.original.isPaid);
-    const [status, setStatus] = useState<PrintJobStatusT>(row.original.status);
+    const job = row.original;
+    const navigation = useNavigation();
+    const revalidator = useRevalidator();
 
     return (
         <Dialog>
@@ -32,40 +32,27 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
             </DialogTrigger>
 
             <DialogContent className="dark max-w-lg text-sm">
-                <DialogTitle>
+                <DialogTitle asChild>
                     <h1 className="text-lg font-semibold">
-                        PrintJob Details: {row.getValue<string>("referenceCode")}
+                        PrintJob Details: {job.referenceId}
                     </h1>
                 </DialogTitle>
 
                 <Separator />
 
                 <div className="max-h-[70vh] overflow-y-auto pr-2 space-y-4">
+
                     <div className="space-y-2 mt-4">
                         <p>
-                            <span className="font-medium">Status:</span> {status}
+                            <span className="font-medium">Status:</span> {job.status}
                         </p>
                         <p>
                             <span className="font-medium">Paid:</span>{" "}
-                            {isPaid ? "Yes" : "No"}
+                            {job.isPaid ? "Yes" : "No"}
                         </p>
                         <p>
-                            <span className="font-medium">Created At:</span>
-                            {getFormattedDateTime({ date: new Date(row.original.createdAt) })}
-                        </p>
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-2">
-                        <h2 className="text-md font-semibold">Customer</h2>
-                        <p>
-                            <span className="font-medium">Name:</span>{" "}
-                            {row.original.customer.name}
-                        </p>
-                        <p>
-                            <span className="font-medium">Email:</span>{" "}
-                            {row.original.customer.email}
+                            <span className="font-medium">Created At:</span>{" "}
+                            {getFormattedDateTime({ date: new Date(job.createdAt) })}
                         </p>
                     </div>
 
@@ -73,34 +60,44 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
 
                     <div className="space-y-2">
                         <h2 className="text-md font-semibold">Update Status</h2>
-                        <Select
-                            defaultValue={status}
-                            onValueChange={(val) => setStatus(val as PrintJobStatusT)}
-                        >
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Pending">Pending</SelectItem>
-                                <SelectItem value="Processing">Processing</SelectItem>
-                                <SelectItem value="Completed">Completed</SelectItem>
-                                <SelectItem value="Cancelled">Cancelled</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <form method="post">
+                            <input type="hidden" name="_intent" value="status" />
+                            <input type="hidden" name="jobId" value={job.id} />
+                            <Select name="status" defaultValue={job.status}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Pending">Pending</SelectItem>
+                                    <SelectItem value="Processing">Processing</SelectItem>
+                                    <SelectItem value="Completed">Completed</SelectItem>
+                                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button
+                                type="submit"
+                                className="ml-2"
+                                disabled={navigation.state === "submitting"}
+                            >
+                                Save
+                            </Button>
+                        </form>
                     </div>
 
                     <Separator />
 
                     <div className="space-y-2">
                         <h2 className="text-md font-semibold">Payment</h2>
-                        <Button
-                            onClick={() => {
-                                setIsPaid(true);
-                            }}
-                            disabled={isPaid}
-                        >
-                            {isPaid ? "Paid" : "Mark as Paid"}
-                        </Button>
+                        <form method="post">
+                            <input type="hidden" name="_intent" value="pay" />
+                            <input type="hidden" name="jobId" value={job.id} />
+                            <Button
+                                type="submit"
+                                disabled={job.isPaid || navigation.state === "submitting"}
+                            >
+                                {job.isPaid ? "Paid" : "Mark as Paid"}
+                            </Button>
+                        </form>
                     </div>
 
                     <Separator />
@@ -108,8 +105,11 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
                     <div>
                         <h2 className="text-md font-semibold mb-2">Files</h2>
                         <ul className="space-y-2">
-                            {row.original.printFiles.map((file: any) => (
-                                <li key={file.id} className="rounded border p-2 space-y-1">
+                            {job.printFiles.map((file: any) => (
+                                <li
+                                    key={file.id}
+                                    className="rounded border p-2 space-y-1"
+                                >
                                     <p>
                                         <span className="font-medium">File:</span> {file.name}
                                     </p>
@@ -126,29 +126,26 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
                                     </p>
                                     {file.notes && (
                                         <p>
-                                            <span className="font-medium">Notes:</span> {file.notes}
+                                            <span className="font-medium">Notes:</span>{" "}
+                                            {file.notes}
                                         </p>
                                     )}
 
-                                    <Button
-                                        variant="secondary"
-                                        size="sm"
-                                        asChild
-                                        disabled={!isPaid}
-                                    >
-                                        <a
-                                            href={file.path}
-                                            download
-                                            onClick={() =>
-                                                setDownloaded((prev) => ({
-                                                    ...prev,
-                                                    [file.id]: true,
-                                                }))
-                                            }
+                                    <form method="post" target="_blank" onSubmit={() => {
+                                        setTimeout(() => revalidator.revalidate(), 500); 
+                                    }}>
+                                        <input type="hidden" name="_intent" value="download" />
+                                        <input type="hidden" name="fileId" value={file.id} />
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            disabled={!job.isPaid}
+                                            type="submit"
                                         >
-                                            {downloaded[file.id] ? "Downloaded" : "Download"}
-                                        </a>
-                                    </Button>
+                                            {file.isDownloaded ? "Downloaded" : "Download"}
+                                        </Button>
+                                    </form>
+
                                 </li>
                             ))}
                         </ul>

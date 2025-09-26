@@ -193,11 +193,7 @@ export function OrdersTable({ data }: { data: PrintJobT[] }) {
         <Button
           size="sm"
           onClick={() => {
-            table.nextPage(); showAlert({
-              type: "success",
-              title: "Profile Updated",
-              description: "Your changes were saved successfully.",
-            });
+            table.nextPage();
           }}
           disabled={!table.getCanNextPage()}
         >
