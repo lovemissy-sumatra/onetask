@@ -1,29 +1,23 @@
-import axiosClient from "../api/axiosClient";
-import { extractAuthToken } from "./extractAdminAuthToken";
-
 export async function validateUserSession(request: Request) {
   try {
-    // get cookie
-    const cookieHeader = request.headers.get("Cookie");
-
-    // get admin auth token form cookie
-    const token = extractAuthToken(cookieHeader);
-
-    // 
-    if (!token) {
-      return null;
-    }
-
-    const response = await axiosClient.get("/api/adminauth/validate-user", {
+    const response = await fetch("http://localhost:5024/api/adminauth/validate-user", {
+      method: "GET",
       headers: {
-        Authorization: `Bearer ${token}`,
+        "Cookie": request.headers.get("Cookie") || "",
       },
-      withCredentials: true,
+      credentials: 'include',
     });
 
-    return response.data;
-  } catch (error: any) {
+
+    if (response.ok) {
+      const userData = await response.json();
+      return userData;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Session validation error:", error);
     return null;
   }
-
 }
+

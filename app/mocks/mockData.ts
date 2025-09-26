@@ -11,7 +11,6 @@ export let mockOrders: PrintJobT[] = [
     customer: {
       name: "Juan Dela Cruz",
       email: "juan.delacruz@gmail.com",
-      phoneNumber: "09123456789",
     },
     printFiles: [
       {
@@ -22,7 +21,7 @@ export let mockOrders: PrintJobT[] = [
         isColored: false,
         paperSize: "A4",
         notes: "Print double-sided",
-        createdAt: new Date(),
+        createdAt: getFormattedDateTime({ date: new Date }),
       },
       {
         name: "resume.docx",
@@ -31,7 +30,7 @@ export let mockOrders: PrintJobT[] = [
         copies: 1,
         isColored: true,
         paperSize: "Letter",
-        createdAt: new Date(),
+        createdAt: getFormattedDateTime({ date: new Date }),
       },
     ],
   },
@@ -44,7 +43,6 @@ export let mockOrders: PrintJobT[] = [
     customer: {
       name: "Maria Santos",
       email: "maria.santos@yahoo.com",
-      phoneNumber: "",
     },
     printFiles: [
       {
@@ -55,7 +53,7 @@ export let mockOrders: PrintJobT[] = [
         isColored: true,
         paperSize: "A3",
         notes: "Use glossy paper",
-        createdAt: new Date(),
+         createdAt: getFormattedDateTime({date: new Date}),
       },
     ],
   },

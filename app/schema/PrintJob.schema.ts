@@ -8,17 +8,12 @@ export const PrintFileSchema = z.object({
   isColored: z.boolean(),
   paperSize: z.enum(["A4", "A3", "A2", "Letter"]),
   notes: z.string().optional(),
-  createdAt: z.date,
+  createdAt: z.string(),
 });
 
 export const CustomerSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   email: z.string().min(1, { message: "Email is required" }).email(),
-  phoneNumber: z
-    .string()
-    .regex(/^\d{11}$/, { message: "Phone must be exactly 11 digits" })
-    .optional()
-    .or(z.literal("")),
 });
 
 export const PrintJobFormSchema = z.object({
@@ -30,7 +25,7 @@ export const PrintJobFormSchema = z.object({
     paperSize: z.enum(["A4", "Letter", "Long"]),
   }),
   printFiles: z.array(PrintFileSchema).min(1, { message: "Upload at least 1 file" }),
-  createdAt: z.string().datetime(),
+  createdAt: z.string(),
 });
 
 export const statusEnum = z.enum(["Pending", "Processing", "Completed", "Cancelled"]);
