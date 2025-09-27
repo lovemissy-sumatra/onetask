@@ -1,9 +1,9 @@
+import apiUrl from "~/utils/api/apiUrl";
+import axiosClient from "~/utils/api/axiosClient";
+
 export async function logoutUser(): Promise<void> {
   try {
-    await fetch('http://localhost:5024/api/adminauth/logout', {
-      method: 'POST',
-      credentials: 'include',
-    });
+    await axiosClient.post(`${apiUrl}/api/adminauth/logout`);
   } catch (error) {
     console.error('Logout failed:', error);
   }

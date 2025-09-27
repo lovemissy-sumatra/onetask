@@ -1,33 +1,27 @@
 import type { AuthResult } from "~/schema/Auth.schema";
+import axiosClient from "~/utils/api/axiosClient";
 
 export async function validateUserSession(request?: Request): Promise<AuthResult> {
   try {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest'
+    const headers: Record<string, string> = {
+      "X-Requested-With": "XMLHttpRequest",
     };
-    
-    if (request && typeof window === 'undefined') {
-      const cookieHeader = request.headers.get('Cookie');
+
+    if (request && typeof window === "undefined") {
+      const cookieHeader = request.headers.get("Cookie");
       if (cookieHeader) {
         headers.Cookie = cookieHeader;
       }
     }
 
-    const response = await fetch('http://localhost:5024/api/adminauth/validate-user', {
-      method: 'GET',
-      credentials: 'include', 
+    const response = await axiosClient.get("/api/adminauth/validate-user", {
       headers,
+      withCredentials: true
     });
 
-    if (response.ok) {
-      const userData = await response.json();
-      return { user: userData, success: true };
-    }
-    
-    return { user: null, success: false };
-  } catch (error) {
-    console.error('Auth validation failed:', error);
+    return { user: response.data, success: true };
+  } catch (error: any) {
+    console.error("Auth validation failed:", error);
     return { user: null, success: false };
   }
 }

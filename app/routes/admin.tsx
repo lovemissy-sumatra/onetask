@@ -1,10 +1,9 @@
-import { OrdersTable } from "../components/feature/OrdersTable";
+import { OrdersTable } from "../components/feature/admin/OrdersTable";
 import axiosClient from "~/utils/api/axiosClient";
 import {
   redirect,
   useLoaderData,
   useRevalidator,
-  useSubmit,
   useNavigate,
   type LoaderFunctionArgs,
 } from "react-router";
@@ -22,18 +21,17 @@ import { StatCard } from "~/components/common/StatCard";
 import { calculateStats, StatusOverview } from "~/components/common/StatusOverview";
 import { validateUserSession } from "~/services/auth/validateUserSession";
 import { logoutUser } from "~/services/auth/logoutUser";
-import apiUrl from "~/utils/api/apiUrl";
+import { updatePrintJobStatus } from "~/services/admin/updatePrintJobStatus";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const authResult = await validateUserSession(request);
-
 
   if (!authResult.success || !authResult.user) {
     throw redirect("/login");
   }
 
   try {
-    const printjobs = await axiosClient("/api/printjob");
+    const printjobs = await axiosClient.get("/api/printjob");
     return {
       user: authResult.user,
       printjobs: printjobs.data.data as PrintJobT[]
@@ -43,40 +41,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
   }
 }
 
-export async function action({ request, params }: LoaderFunctionArgs) {
+export async function action({ request }: LoaderFunctionArgs) {
   const formData = await request.formData();
-  const intent = formData.get("_intent");
-  console.log({ intent })
-
-
-  if (intent === "status") {
-    const status = formData.get("status");
-    const jobId = formData.get("jobId");
-
-
-    await fetch(`${apiUrl}/api/printjob/${jobId}/status`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(status),
-    });
-  }
-
-  if (intent === "pay") {
-    const jobId = formData.get("jobId");
-    await fetch(`${apiUrl}/api/printjob/${jobId}/pay`, { method: "PUT" });
-  }
-
-  if (intent === "download") {
-    const fileId = formData.get("fileId") as string;
-    await fetch(`${apiUrl}/api/printfile/${fileId}/downloaded`, { method: "PUT" });
-
-    const fileUrl = `${apiUrl}/uploaded/files/...`;
-
-    return redirect(fileUrl);
-  }
-
-
-  return null;
+  const { type, title, description } = await updatePrintJobStatus({ formData })
+  return { type, title, description };
 }
 
 export default function Admin() {

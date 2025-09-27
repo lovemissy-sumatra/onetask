@@ -1,22 +1,24 @@
 import type { LoginResultT } from "~/schema/Login.schema";
+import axiosClient from "~/utils/api/axiosClient";
 
-export async function loginUser(username: string, password: string): Promise<LoginResultT> {
+export async function loginUser(
+  username: string,
+  password: string
+): Promise<LoginResultT> {
   try {
-    const response = await fetch('http://localhost:5024/api/adminauth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ username, password }),
+    const response = await axiosClient.post("/api/adminauth/login", {
+      username,
+      password,
     });
 
-    if (response.ok) {
-      const userData = await response.json();
-      return { success: true, user: userData };
-    } else {
-      const errorData = await response.json();
-      return { success: false, error: errorData.message || 'Login failed' };
-    }
-  } catch (error) {
-    return { success: false, error: 'Network error' };
+    return { success: true, user: response.data };
+  } catch (error: any) {
+    return {
+      success: false,
+      error:
+        error.response?.data?.message ||
+        error.message ||
+        "Login failed",
+    };
   }
 }

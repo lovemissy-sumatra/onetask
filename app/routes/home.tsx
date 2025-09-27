@@ -1,6 +1,6 @@
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useFetcher } from "react-router";
 import type { ActionFunctionArgs } from "react-router";
 import { Input } from "~/components/ui/input";
@@ -8,43 +8,16 @@ import { Label } from "~/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { ErrorMessage } from "~/components/common/errorMessage";
 import { PrintJobFormSchema, type PrintJobFormT } from "~/schema/PrintJob.schema";
-import { getFormattedDateTime } from "~/utils/formatting/getFormattedDateTime";
+import { createPrintJob } from "~/services/printjob/createPrintJob";
+import { useFileManager } from "~/hooks/useFileManager";
 
 export async function action({ request }: ActionFunctionArgs) {
-  try {
-    const formData = await request.formData();
-
-    const response = await fetch('http://localhost:5024/api/printjob/create', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (response.ok) {
-      const result = await response.json();
-      return {
-        success: true,
-        message: `Print job created successfully! Reference code: ${result.referenceCode}`,
-        referenceCode: result.referenceCode
-      };
-    } else {
-      const error = await response.text();
-      return {
-        success: false,
-        message: `Failed to create print job: ${error}`
-      };
-    }
-  } catch (error) {
-    console.error('Submission error:', error);
-    return {
-      success: false,
-      message: 'An error occurred while submitting the form.'
-    };
-  }
+  const formData = await request.formData();
+  return await createPrintJob({ formData })
 }
 
 export default function Home() {
   const fetcher = useFetcher<typeof action>();
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   const {
     control,
@@ -59,21 +32,23 @@ export default function Home() {
       customer: { name: "", email: "" },
       useDefaultOptions: true,
       defaultOptions: { copies: 1, isColored: false, paperSize: "A4" },
-      printFiles: [],
+      files: [],
       createdAt: new Date().toISOString(),
     },
   });
 
   const { fields: files, append, remove } = useFieldArray({
     control,
-    name: "printFiles",
+    name: "files",
   });
+
+  const { addFile, removeFile, uploadedFiles, setUploadedFiles } = useFileManager(append, remove);
 
   const useDefault = watch("useDefaultOptions");
   const isSubmitting = fetcher.state === "submitting";
 
   useEffect(() => {
-    if (fetcher.data?.success && fetcher.state === "idle") {
+    if (fetcher.data?.type === 'success' && fetcher.state === "idle") {
       reset();
       setUploadedFiles([]);
     }
@@ -91,7 +66,7 @@ export default function Home() {
     formData.append('Customer.Email', data.customer.email);
 
     uploadedFiles.forEach((file, index) => {
-      const fileData = data.printFiles[index];
+      const fileData = data.files[index];
       const options = data.useDefaultOptions ? data.defaultOptions : fileData;
 
       formData.append(`Files[${index}].File`, file);
@@ -110,31 +85,6 @@ export default function Home() {
     });
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setUploadedFiles(prev => [...prev, ...newFiles]);
-
-      newFiles.forEach((file) => {
-        append({
-          name: file.name,
-          path: URL.createObjectURL(file),
-          fileSize: +(file.size / (1024 * 1024)).toFixed(2),
-          copies: 1,
-          isColored: false,
-          paperSize: "A4",
-          notes: "",
-          createdAt: getFormattedDateTime({ date: new Date() })
-        });
-      });
-    }
-  };
-
-  const handleRemoveFile = (index: number) => {
-    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
-    remove(index);
-  };
-
   return (
     <div className="p-5 rounded-xl flex flex-col items-center bg-white/5 h-full min-h-screen">
       <h1 className="font-bold text-4xl bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 inline-block text-transparent bg-clip-text pb-3">
@@ -143,22 +93,18 @@ export default function Home() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 w-full max-w-lg">
         <div className="text-xs text-gray-500">
-          Debug: Files: {uploadedFiles.length}, Form valid: {Object.keys(errors).length === 0 ? 'Yes' : 'No'}
-          {Object.keys(errors).length > 0 && (
-            <div>Errors: {Object.keys(errors).join(', ')}</div>
-          )}
+
         </div>
         {fetcher.data && (
-          <div className={`p-3 rounded-md ${fetcher.data.success
+          <div className={`p-3 rounded-md ${fetcher.data.type === 'success'
             ? 'bg-green-100 text-green-700 border border-green-300'
             : 'bg-red-100 text-red-700 border border-red-300'
             }`}>
-            {fetcher.data.message}
+            {fetcher.data.description}
           </div>
         )}
 
         <div className="flex flex-col gap-2">
-          <h2 className="font-medium">Your Information</h2>
           <Label className="">Your Name</Label>
           <Input placeholder="Juan Dela Cruz" {...register("customer.name")} />
           <ErrorMessage message={errors.customer?.name?.message} />
@@ -185,10 +131,10 @@ export default function Home() {
             id="uploadFiles"
             className="hidden"
             multiple
-            onChange={handleFileUpload}
+            onChange={addFile}
             accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
           />
-          <ErrorMessage message={errors.printFiles?.message as string} />
+          <ErrorMessage message={errors.files?.message as string} />
 
           {uploadedFiles.length > 0 && (
             <div className="text-sm text-neutral-600">
@@ -214,18 +160,18 @@ export default function Home() {
                     <span>{file.name} ({file.fileSize}MB)</span>
                     <button
                       type="button"
-                      onClick={() => handleRemoveFile(index)}
+                      onClick={() => removeFile(index)}
                       className="text-red-500 hover:text-red-700 text-sm"
                     >
                       Remove
                     </button>
                   </li>
-                  <Label>Notes (optional)</Label>
+                    <Label>Notes (optional)</Label>
                     <Input
-                      {...register(`printFiles.${index}.notes`)}
+                      {...register(`files.${index}.notes`)}
                       placeholder="Notes (optional)"
                     />
-                    <ErrorMessage message={errors.printFiles?.[index]?.notes?.message} /></div>
+                    <ErrorMessage message={errors.files?.[index]?.notes?.message} /></div>
 
                 ))}
               </ul>
@@ -278,7 +224,7 @@ export default function Home() {
                 <h4 className="font-medium">{file.name}</h4>
                 <button
                   type="button"
-                  onClick={() => handleRemoveFile(index)}
+                  onClick={() => removeFile(index)}
                   className="text-red-500 hover:text-red-700 text-sm"
                 >
                   Remove
@@ -293,25 +239,33 @@ export default function Home() {
               <Input
                 type="number"
                 min="1"
-                {...register(`printFiles.${index}.copies`, { valueAsNumber: true })}
+                {...register(`files.${index}.copies`, { valueAsNumber: true })}
                 placeholder="Copies"
               />
-              <ErrorMessage message={errors.printFiles?.[index]?.copies?.message} />
+              <ErrorMessage message={errors.files?.[index]?.copies?.message} />
 
               <div className="flex items-center gap-2">
-                <input type="checkbox" {...register(`printFiles.${index}.isColored`)} />
+                <input type="checkbox" {...register(`files.${index}.isColored`)} />
                 <Label>Colored</Label>
               </div>
-              <ErrorMessage message={errors.printFiles?.[index]?.isColored?.message} />
+              <ErrorMessage message={errors.files?.[index]?.isColored?.message} />
 
-              <select {...register(`printFiles.${index}.paperSize`)} className="border rounded px-3 py-2">
-                <option value="A4">A4</option>
-                <option value="Letter">Letter</option>
-                <option value="Long">Long</option>
-              </select>
-              <ErrorMessage message={errors.printFiles?.[index]?.paperSize?.message} />
+              <Select {...register(`files.${index}.paperSize`)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select paper size" />
+                </SelectTrigger>
+                <SelectContent className="">
+                  <SelectGroup>
+                    <SelectLabel>Paper Sizes</SelectLabel>
+                    <SelectItem value="A4">A4</SelectItem>
+                    <SelectItem value="Letter">Letter</SelectItem>
+                    <SelectItem value="Long">Long</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+              <ErrorMessage message={errors.files?.[index]?.paperSize?.message} />
 
-              <Input {...register(`printFiles.${index}.notes`)} placeholder="Notes (optional)" />
+              <Input {...register(`files.${index}.notes`)} placeholder="Notes (optional)" />
             </div>
           ))}
 
@@ -323,12 +277,6 @@ export default function Home() {
           {isSubmitting ? 'Submitting...' : 'Submit Print Job'}
         </button>
 
-        <button
-          type="button"
-          className="bg-gray-500 text-white px-4 py-2 rounded text-sm"
-        >
-          Debug: Test Form Data
-        </button>
       </form>
     </div>
   );

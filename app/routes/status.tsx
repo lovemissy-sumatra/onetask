@@ -3,109 +3,22 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFetcher } from "react-router";
 import { z } from "zod";
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
+import type { ActionFunctionArgs } from "react-router";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { ErrorMessage } from "~/components/common/errorMessage";
+import { checkReferenceCode } from "~/services/printjob/checkReferenceCode";
+import { getFormattedDateTime } from "~/utils/formatting/getFormattedDateTime";
+import { getStatusColor } from "~/utils/formatting/getStatusColor";
+import { ReferenceCodeSchema, type PrintJobT, type ReferenceCodeFormT } from "~/schema/PrintJob.schema";
 
-const ReferenceCodeSchema = z.object({
-  referenceCode: z.string().min(1, { message: "Reference code is required" }),
-});
-
-type ReferenceCodeFormT = z.infer<typeof ReferenceCodeSchema>;
-
-interface PrintFile {
-  id: string;
-  name: string;
-  copies: number;
-  isColored: boolean;
-  paperSize: string;
-  notes?: string;
-  fileSize: number;
-}
-
-interface PrintJobStatus {
-  id: string;
-  referenceCode: string;
-  status: "Pending" | "Processing" | "Completed" | "Cancelled";
-  createdAt: string;
-  updatedAt: string;
-  customer: {
-    name: string;
-    email: string;
-  };
-  files: PrintFile[];
-}
 
 export async function action({ request }: ActionFunctionArgs) {
-  try {
-    const formData = await request.formData();
-    const referenceCode = formData.get("referenceCode") as string;
+  const formData = await request.formData();
+  return await checkReferenceCode({ formData })
 
-    if (!referenceCode) {
-      return {
-        success: false,
-        message: "Reference code is required",
-        data: null
-      };
-    }
-
-    const response = await fetch(`http://localhost:5024/api/printjob/status/${referenceCode}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.ok) {
-      const printJob: PrintJobStatus = await response.json();
-      return {
-        success: true,
-        message: "Print job found",
-        data: printJob
-      };
-    } else if (response.status === 404) {
-      return {
-        success: false,
-        message: "Print job not found. Please check your reference code.",
-        data: null
-      };
-    } else {
-      const error = await response.text();
-      return {
-        success: false,
-        message: `Error fetching print job: ${error}`,
-        data: null
-      };
-    }
-  } catch (error) {
-    console.error('Status check error:', error);
-    return {
-      success: false,
-      message: 'An error occurred while checking the status.',
-      data: null
-    };
-  }
 }
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'Pending':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-    case 'Processing':
-      return 'bg-blue-100 text-blue-800 border-blue-300';
-    case 'Completed':
-      return 'bg-green-100 text-green-800 border-green-300';
-    case 'Cancelled':
-      return 'bg-red-100 text-red-800 border-red-300';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-300';
-  }
-};
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString();
-};
 
 export default function StatusChecker() {
   const fetcher = useFetcher<typeof action>();
@@ -124,16 +37,16 @@ export default function StatusChecker() {
   });
 
   const isSubmitting = fetcher.state === "submitting";
-  const printJob = fetcher.data?.data as PrintJobStatus | null;
+  const printJob = fetcher.data?.data as PrintJobT | null;
 
   const onSubmit = (data: ReferenceCodeFormT) => {
     const formData = new FormData();
     formData.append("referenceCode", data.referenceCode);
-    
+
     fetcher.submit(formData, {
       method: 'POST',
     });
-    
+
     setSearchPerformed(true);
   };
 
@@ -214,11 +127,11 @@ export default function StatusChecker() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-gray-400">Created:</span>
-                      <p className="text-white font-medium">{formatDate(printJob.createdAt)}</p>
+                      <p className="text-white font-medium">{getFormattedDateTime({ date: new Date(printJob.createdAt) })}</p>
                     </div>
                     <div>
                       <span className="text-gray-400">Last Updated:</span>
-                      <p className="text-white font-medium">{formatDate(printJob.updatedAt)}</p>
+                      <p className="text-white font-medium">{getFormattedDateTime({ date: new Date(printJob.updatedAt) })}</p>
                     </div>
                   </div>
                 </div>
@@ -229,7 +142,7 @@ export default function StatusChecker() {
                   </h3>
                   <div className="space-y-3">
                     {printJob.files.map((file, index) => (
-                      <div key={file.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                      <div key={file.name} className="bg-white/5 rounded-lg p-4 border border-white/10">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                           <div className="flex-1">
                             <h4 className="font-medium text-white">{file.name}</h4>
@@ -242,9 +155,8 @@ export default function StatusChecker() {
                             <div className="flex flex-col sm:items-end gap-1">
                               <span className="text-white font-medium">{file.copies} copies</span>
                               <div className="flex gap-2">
-                                <span className={`px-2 py-1 rounded text-xs ${
-                                  file.isColored ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
-                                }`}>
+                                <span className={`px-2 py-1 rounded text-xs ${file.isColored ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'
+                                  }`}>
                                   {file.isColored ? 'Colored' : 'B&W'}
                                 </span>
                                 <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">

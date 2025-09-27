@@ -21,23 +21,34 @@ export const PrintJobFormSchema = z.object({
   customer: CustomerSchema,
   useDefaultOptions: z.boolean(),
   defaultOptions: z.object({
-    copies: z.number({ message: "1 more or copies is required" }).int().min(1, { message: "1 more or copies is required" }),
+    copies: z.number().int().min(1, { message: "1 or more copies is required" }),
     isColored: z.boolean(),
     paperSize: z.enum(["A4", "Letter", "Long"]),
   }),
-  printFiles: z.array(PrintFileSchema).min(1, { message: "Upload at least 1 file" }),
+  files: z.array(PrintFileSchema).min(1, { message: "Upload at least 1 file" }),
   createdAt: z.string(),
 });
 
 export const statusEnum = z.enum(["Pending", "Processing", "Completed", "Cancelled"]);
 
+export const PrintJobSchema = PrintJobFormSchema.omit({
+  useDefaultOptions: true,
+  defaultOptions: true,
+}).extend({
+  id: z.string(),
+  referenceCode: z.string(),
+  status: statusEnum,
+  isPaid: z.boolean(),
+  updatedAt: z.date(),
+});
+
 export type PrintJobStatusT = z.infer<typeof statusEnum>;
 export type PrintFileT = z.infer<typeof PrintFileSchema>;
 export type PrintJobFormT = z.infer<typeof PrintJobFormSchema>;
-export type PrintJobT = Omit<PrintJobFormT, "useDefaultOptions" | "defaultOptions"> & {
-  id: string;
-  referenceId: string;
-  status: PrintJobStatusT;
-  isPaid: boolean;
-};[];
+export type PrintJobT = z.infer<typeof PrintJobSchema>;
 
+export const ReferenceCodeSchema = PrintJobSchema.pick({
+  referenceCode: true,
+});
+
+export type ReferenceCodeFormT = z.infer<typeof ReferenceCodeSchema>;
