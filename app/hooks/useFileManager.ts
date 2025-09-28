@@ -21,7 +21,7 @@ export function useFileManager(
           printFilesize: +(file.size / (1024 * 1024)).toFixed(2),
           copies: 1,
           isColored: false,
-          paperSize: "A4",
+          paperSize: "A4", 
           notes: "",
           createdAt: getFormattedDateTime({ date: new Date() }),
           isDownloaded: false,

@@ -7,7 +7,7 @@ export const PrintprintFileschema = z.object({
   copies: z.number().int().min(1),
   isColored: z.boolean(),
   isDownloaded: z.boolean(),
-  paperSize: z.enum(["A4", "A3", "A2", "Letter"]),
+  paperSize: z.enum(["A4", "Long", "Letter"]),
   notes: z.string().optional(),
   createdAt: z.string(),
 });

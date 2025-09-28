@@ -1,7 +1,6 @@
 import axios from "axios";
 import apiUrl from "./apiUrl";
 
-// reusable axios instance
 const axiosClient = axios.create({
   baseURL: apiUrl,
   headers: {
@@ -10,10 +9,18 @@ const axiosClient = axios.create({
   withCredentials: true,
 });
 
-// allows to be reconfigured every use, such as attaching cookie
 axiosClient.interceptors.request.use((configuration) => {
   configuration.withCredentials = true;
   return configuration;
 });
+
+export function setSSRRequestCookies(cookieHeader?: string) {
+  if (cookieHeader) {
+    axiosClient.defaults.headers.Cookie = cookieHeader;
+  } else {
+    delete axiosClient.defaults.headers.Cookie;
+  }
+}
+
 
 export default axiosClient;

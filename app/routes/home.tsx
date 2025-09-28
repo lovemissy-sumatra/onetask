@@ -27,6 +27,8 @@ export default function Home() {
     register,
     watch,
     handleSubmit,
+    getValues,
+    setValue,
     reset,
     formState: { errors },
   } = useForm<PrintJobFormT>({
@@ -104,7 +106,6 @@ export default function Home() {
           />
         )}
 
-
         <div className="flex flex-col gap-2">
           <Label className="">Your Name</Label>
           <Input placeholder="Juan Dela Cruz" {...register("customer.name")} />
@@ -157,23 +158,24 @@ export default function Home() {
               <h4 className="text-sm font-medium mb-2">printFiles to be printed:</h4>
               <ul className="text-sm space-y-1">
                 {printFiles.map((file, index) => (
-                  <div className="flex flex-col gap-1 p-2 bg-neutral-50/5 rounded"> <li key={file.id} className="flex justify-between items-center p-2 bg-neutral-50/5 rounded">
-                    <span>{file.name} ({file.printFilesize}MB)</span>
-                    <button
-                      type="button"
-                      onClick={() => removeFile(index)}
-                      className="text-red-500 hover:text-red-700 text-sm"
-                    >
-                      Remove
-                    </button>
-                  </li>
+                  <div key={file.id} className="flex flex-col gap-1 p-2 bg-neutral-50/5 rounded">
+                    <div className="flex justify-between items-center p-2 bg-neutral-50/5 rounded">
+                      <span>{file.name} ({file.printFilesize}MB)</span>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
                     <Label>Notes (optional)</Label>
                     <Input
                       {...register(`printFiles.${index}.notes`)}
                       placeholder="Notes (optional)"
                     />
-                    <ErrorMessage message={errors.printFiles?.[index]?.notes?.message} /></div>
-
+                    <ErrorMessage message={errors.printFiles?.[index]?.notes?.message} />
+                  </div>
                 ))}
               </ul>
             </div>
@@ -213,62 +215,78 @@ export default function Home() {
               )}
             />
             <ErrorMessage message={errors.defaultOptions?.paperSize?.message} />
-
-
           </div>
         )}
 
         {!useDefault &&
-          printFiles.map((file, index) => (
-            <div key={file.id} className="border p-3 rounded-md flex flex-col gap-2">
-              <div className="flex justify-between items-center">
-                <h4 className="font-medium">{file.name}</h4>
-                <button
-                  type="button"
-                  onClick={() => removeFile(index)}
-                  className="text-red-500 hover:text-red-700 text-sm"
-                >
-                  Remove
-                </button>
+          printFiles.map((file, index) => {
+            const currentPaperSize = watch(`printFiles.${index}.paperSize`);
+            
+            return (
+              <div key={file.id} className="border p-3 rounded-md flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-medium">{file.name}</h4>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(index)}
+                    className="text-red-500 hover:text-red-700 text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                <div className="text-sm text-neutral-600">
+                  Size: {file.printFilesize}MB | Paper Size: {currentPaperSize || 'Not set'}
+                </div>
+
+                <h4 className="font-medium">Number of copies:</h4>
+                <Input
+                  type="number"
+                  min="1"
+                  {...register(`printFiles.${index}.copies`, { valueAsNumber: true })}
+                  placeholder="Copies"
+                />
+                <ErrorMessage message={errors.printFiles?.[index]?.copies?.message} />
+
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" {...register(`printFiles.${index}.isColored`)} />
+                  <Label>Colored</Label>
+                </div>
+                <ErrorMessage message={errors.printFiles?.[index]?.isColored?.message} />
+
+                <Controller
+                  control={control}
+                  name={`printFiles.${index}.paperSize`}
+                  render={({ field }) => {
+                    return (
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                        }} 
+                        value={field.value}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Select paper size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            <SelectLabel>Paper Sizes</SelectLabel>
+                            <SelectItem value="A4">A4</SelectItem>
+                            <SelectItem value="Letter">Letter</SelectItem>
+                            <SelectItem value="Long">Long</SelectItem>
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    );
+                  }}
+                />
+
+                <ErrorMessage message={errors.printFiles?.[index]?.paperSize?.message} />
+
+                <Input {...register(`printFiles.${index}.notes`)} placeholder="Notes (optional)" />
               </div>
-
-              <div className="text-sm text-neutral-600">
-                Size: {file.printFilesize}MB
-              </div>
-
-              <h4 className="font-medium">Number of copies:</h4>
-              <Input
-                type="number"
-                min="1"
-                {...register(`printFiles.${index}.copies`, { valueAsNumber: true })}
-                placeholder="Copies"
-              />
-              <ErrorMessage message={errors.printFiles?.[index]?.copies?.message} />
-
-              <div className="flex items-center gap-2">
-                <input type="checkbox" {...register(`printFiles.${index}.isColored`)} />
-                <Label>Colored</Label>
-              </div>
-              <ErrorMessage message={errors.printFiles?.[index]?.isColored?.message} />
-
-              <Select {...register(`printFiles.${index}.paperSize`)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select paper size" />
-                </SelectTrigger>
-                <SelectContent className="">
-                  <SelectGroup>
-                    <SelectLabel>Paper Sizes</SelectLabel>
-                    <SelectItem value="A4">A4</SelectItem>
-                    <SelectItem value="Letter">Letter</SelectItem>
-                    <SelectItem value="Long">Long</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              <ErrorMessage message={errors.printFiles?.[index]?.paperSize?.message} />
-
-              <Input {...register(`printFiles.${index}.notes`)} placeholder="Notes (optional)" />
-            </div>
-          ))}
+            );
+          })}
 
         <button
           type="submit"
@@ -277,7 +295,6 @@ export default function Home() {
         >
           {isSubmitting ? 'Submitting...' : 'Submit Print Job'}
         </button>
-
       </form>
     </div>
   );

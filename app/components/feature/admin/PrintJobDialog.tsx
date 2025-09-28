@@ -80,7 +80,7 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
                             className="flex gap-2"
 
                         >
-
+                            <input type="hidden" name="_action" value="updateJobStatus" />
                             <input type="hidden" name="_intent" value="status" />
                             <input type="hidden" name="jobId" value={job.id} />
                             <Select name="status" defaultValue={job.status}>
@@ -111,6 +111,7 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
                         <fetcher.Form method="post">
                             <input type="hidden" name="_intent" value="pay" />
                             <input type="hidden" name="jobId" value={job.id} />
+                            <input type="hidden" name="_action" value="updateJobStatus" />
                             <Button
                                 type="submit"
                                 disabled={job.isPaid || fetcher.state !== "idle"}
@@ -153,6 +154,7 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
                                         <input type="hidden" name="_intent" value="download" />
                                         <input type="hidden" name="fileId" value={file.id} />
                                         <input type="hidden" name="filePath" value={file.path} />
+                                        <input type="hidden" name="_action" value="updateJobStatus" />
                                         <Button
                                             variant="secondary"
                                             size="sm"

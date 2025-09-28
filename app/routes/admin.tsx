@@ -1,11 +1,12 @@
 import { OrdersTable } from "../components/feature/admin/OrdersTable";
-import axiosClient from "~/utils/api/axiosClient";
+import axiosClient, { setSSRRequestCookies } from "~/utils/api/axiosClient";
 import {
   redirect,
   useLoaderData,
   useRevalidator,
   useNavigate,
   type LoaderFunctionArgs,
+  type ActionFunctionArgs,
 } from "react-router";
 import {
   FileText,
@@ -23,51 +24,78 @@ import { validateUserSession } from "~/services/auth/validateUserSession";
 import { logoutUser } from "~/services/auth/logoutUser";
 import { updatePrintJobStatus } from "~/services/admin/updatePrintJobStatus";
 import { bulkDelete, deleteJob } from "~/services/admin/deletePrintJob";
+import { AdminsTable } from "~/components/feature/admin/AdminsTable";
+import { axiosSSR } from "~/utils/api/axiosSSR";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const authResult = await validateUserSession(request);
 
-  if (!authResult.success || !authResult.user) {
+  const { user, success } = await validateUserSession(request);
+  if (!user) {
     throw redirect("/login");
   }
 
-  try {
-    const allJobs = await axiosClient.get("/api/printjob");
+  const client = axiosSSR(request);
 
+  try {
+    const allJobs = await client.get("/api/printjob");
     const jobs = allJobs.data.data as PrintJobT[];
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 1);
 
-    const recentJobs = jobs.filter(
-      (job) => new Date(job.createdAt) >= cutoff
-    );
-    const olderJobs = jobs.filter(
-      (job) => new Date(job.createdAt) < cutoff
-    );
+    const recentJobs = jobs.filter((job) => new Date(job.createdAt) >= cutoff);
+    const olderJobs = jobs.filter((job) => new Date(job.createdAt) < cutoff);
+
+    let admins: any[] = [];
+    if (user?.role === "Superadmin") {
+      const res = await client.get("/api/admin");
+      admins = res.data;
+    }
 
     return {
-      user: authResult.user,
+      user: user,
       recentJobs,
       olderJobs,
+      admins,
     };
   } catch (error) {
     throw redirect("/login");
   }
 }
 
-export async function action({ request }: LoaderFunctionArgs) {
+export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
-  const { type, title, description } = await updatePrintJobStatus({ formData })
-  return { type, title, description };
+  const _action = formData.get("_action");
+
+  if (_action === "createAdmin") {
+    const username = formData.get("username");
+    const password = formData.get("password");
+    const role = formData.get("role") || "Admin";
+
+    try {
+      const client = axiosSSR(request);
+      const res = await client.post("/api/admin", { username, password, role });
+    } catch (error: any) {
+      return { error: "Could not create admin", status: error?.response?.status };
+    }
+  }
+
+  if (_action === "updateJobStatus") {
+    const { type, title, description } = await updatePrintJobStatus({ formData });
+    return { type, title, description };
+  }
+
+  return { error: "Unknown action" };
 }
 
+
 export default function Admin() {
-  const { user, recentJobs, olderJobs } = useLoaderData() as {
-    user: { username: string };
+  const { user, recentJobs, olderJobs, admins } = useLoaderData() as {
+    user: { username: string; role: string };
     recentJobs: PrintJobT[];
     olderJobs: PrintJobT[];
-  };
+    admins: any[];
+  }
 
   const stats = calculateStats([...recentJobs, ...olderJobs]);
   const revalidator = useRevalidator();
@@ -147,8 +175,8 @@ export default function Admin() {
         <StatCard
           title="Completion Rate"
           value={`${stats.totalJobs > 0
-              ? Math.round((stats.completedJobs / stats.totalJobs) * 100)
-              : 0
+            ? Math.round((stats.completedJobs / stats.totalJobs) * 100)
+            : 0
             }%`}
           icon={CheckCircle}
           color="bg-green-600"
@@ -174,7 +202,7 @@ export default function Admin() {
         </div>
       </div>
 
-      <div className="bg-white/10 rounded-lg border border-white/20">
+      <div className="bg-white/10 rounded-lg border border-white/20 mb-8">
         <div className="p-6 border-b border-white/20">
           <h2 className="text-xl font-semibold text-white">Older Print Jobs</h2>
           <p className="text-gray-400 text-sm mt-1">
@@ -189,6 +217,20 @@ export default function Admin() {
           />
         </div>
       </div>
+
+      <div className="bg-white/10 rounded-lg border border-white/20">
+        <div className="p-6 border-b border-white/20">
+          <h2 className="text-xl font-semibold text-white">Admins</h2>
+          <p className="text-gray-400 text-sm mt-1">
+            View, Create Admin here
+          </p>
+        </div>
+        <div className="p-6">
+          {user.role === "Superadmin" && <AdminsTable data={admins} />}
+        </div>
+      </div>
+
+
     </div>
   );
 }

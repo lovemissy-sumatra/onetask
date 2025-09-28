@@ -11,12 +11,6 @@ import { LoginFormSchema, type LoginFormT } from "~/schema/Login.schema";
 import { ErrorMessage } from "~/components/shared/InlineErrorMessage";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const authResult = await validateUserSession(request);
-  
-  if (authResult.success && authResult.user) {
-    throw redirect("/admin");
-  }
-  
   return { isAuthenticated: false };
 }
 
@@ -37,16 +31,16 @@ export default function Login() {
   const onSubmit = async (data: LoginFormT) => {
     setLoginError(null);
     setIsLoading(true);
-    
+
     try {
       const result = await loginUser(data.username, data.password);
-      
       if (result.success) {
         navigate('/admin', { replace: true });
       } else {
         setLoginError(result.error || 'Login failed');
       }
     } catch (error) {
+      console.error("Login error:", error);
       setLoginError('Network error occurred');
     } finally {
       setIsLoading(false);

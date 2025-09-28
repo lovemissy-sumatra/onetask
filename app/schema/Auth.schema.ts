@@ -1,6 +1,10 @@
 import type { User } from "./User.schema";
 
 export type AuthResult = {
-  user: User | null;
-  success: boolean;
+  success: boolean,
+  user: {
+    id: string,
+    username: string,
+    role: string
+  } | null
 }
