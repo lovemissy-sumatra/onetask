@@ -1,52 +1,50 @@
-import type { PrintJobStatusT } from "~/schema/PrintJob.schema";
+import axiosClient from "~/utils/api/axiosClient";
+import { extractErrorMessage } from "~/utils/formatting/extractErrorMessage";
 
-export async function checkReferenceCode({formData} : {formData: FormData}) {
+export async function checkReferenceCode({ formData }: { formData: FormData }) {
     try {
-        
         const referenceCode = formData.get("referenceCode") as string;
-
         if (!referenceCode) {
             return {
-                success: false,
-                message: "Reference code is required",
-                data: null
+                type: "error",
+                title: "Missing Reference Code",
+                description: "Reference code is required.",
+                data: null,
             };
         }
 
-        const response = await fetch(`http://localhost:5024/api/printjob/status/${referenceCode}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
+        const response = await axiosClient.get(`api/printjob/status/${referenceCode}`);
 
-        if (response.ok) {
-            const printJob: PrintJobStatusT = await response.json();
-            return {
-                success: true,
-                message: "Print job found",
-                data: printJob
-            };
-        } else if (response.status === 404) {
-            return {
-                success: false,
-                message: "Print job not found. Please check your reference code.",
-                data: null
-            };
-        } else {
-            const error = await response.text();
-            return {
-                success: false,
-                message: `Error fetching print job: ${error}`,
-                data: null
-            };
-        }
-    } catch (error) {
-        console.error('Status check error:', error);
         return {
-            success: false,
-            message: 'An error occurred while checking the status.',
-            data: null
+            type: "success",
+            title: "Print Job Found",
+            description: `Print job with reference code ${referenceCode} was found.`,
+            data: response.data,
+        };
+    } catch (err: any) {
+        if (err.response) {
+            if (err.response.status === 404) {
+                return {
+                    type: "error",
+                    title: "Not Found",
+                    description: "Print job not found. Please check your reference code.",
+                    data: null,
+                };
+            }
+
+            return {
+                type: "error",
+                title: "Request Failed",
+                description: `Error fetching print job: ${extractErrorMessage(err, "Unknown error")}`,
+                data: null,
+            };
+        }
+
+        return {
+            type: "error",
+            title: "Network Error",
+            description: "An error occurred while checking the status.",
+            data: null,
         };
     }
 }

@@ -2,13 +2,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { ErrorMessage } from "~/components/common/errorMessage";
 import { useState } from "react";
 import { useNavigate, type LoaderFunctionArgs } from "react-router";
 import { redirect } from "react-router";
 import { validateUserSession } from "~/services/auth/validateUserSession";
 import { loginUser } from "~/services/auth/loginUser";
 import { LoginFormSchema, type LoginFormT } from "~/schema/Login.schema";
+import { ErrorMessage } from "~/components/shared/InlineErrorMessage";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const authResult = await validateUserSession(request);

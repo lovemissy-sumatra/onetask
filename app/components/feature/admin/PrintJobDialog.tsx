@@ -123,9 +123,9 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
                     <Separator />
 
                     <div>
-                        <h2 className="text-md font-semibold mb-2">Files</h2>
+                        <h2 className="text-md font-semibold mb-2">printFiles</h2>
                         <ul className="space-y-2">
-                            {job.files?.map((file: any) => (
+                            {job.printFiles?.map((file: any) => (
                                 <li key={file.id} className="rounded border p-2 space-y-1">
                                     <p>
                                         <span className="font-medium">File:</span> {file.name}

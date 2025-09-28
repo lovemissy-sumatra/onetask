@@ -6,11 +6,11 @@ import { z } from "zod";
 import type { ActionFunctionArgs } from "react-router";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { ErrorMessage } from "~/components/common/errorMessage";
 import { checkReferenceCode } from "~/services/printjob/checkReferenceCode";
 import { getFormattedDateTime } from "~/utils/formatting/getFormattedDateTime";
 import { getStatusColor } from "~/utils/formatting/getStatusColor";
 import { ReferenceCodeSchema, type PrintJobT, type ReferenceCodeFormT } from "~/schema/PrintJob.schema";
+import { ErrorMessage } from "~/components/shared/InlineErrorMessage";
 
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -18,7 +18,6 @@ export async function action({ request }: ActionFunctionArgs) {
   return await checkReferenceCode({ formData })
 
 }
-
 
 export default function StatusChecker() {
   const fetcher = useFetcher<typeof action>();
@@ -90,13 +89,13 @@ export default function StatusChecker() {
 
         {searchPerformed && fetcher.data && (
           <div className="bg-white/10 rounded-lg p-6">
-            {!fetcher.data.success && (
+            {fetcher.data.type === 'error' && (
               <div className="bg-red-100 text-red-700 border border-red-300 p-4 rounded-md mb-4">
-                {fetcher.data.message}
+                {fetcher.data.description}
               </div>
             )}
 
-            {fetcher.data.success && printJob && (
+            {fetcher.data.type === 'success' && printJob && (
               <div className="space-y-6">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                   <div>
@@ -138,15 +137,15 @@ export default function StatusChecker() {
 
                 <div className="bg-white/5 rounded-lg p-4">
                   <h3 className="font-semibold text-white mb-3">
-                    Files ({printJob.files.length} {printJob.files.length === 1 ? 'file' : 'files'})
+                    printFiles ({printJob.printFiles.length} {printJob.printFiles.length === 1 ? 'file' : 'printFiles'})
                   </h3>
                   <div className="space-y-3">
-                    {printJob.files.map((file, index) => (
+                    {printJob.printFiles.map((file, index) => (
                       <div key={file.name} className="bg-white/5 rounded-lg p-4 border border-white/10">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                           <div className="flex-1">
                             <h4 className="font-medium text-white">{file.name}</h4>
-                            <p className="text-gray-400 text-sm">Size: {file.fileSize} MB</p>
+                            <p className="text-gray-400 text-sm">Size: {file.printFilesize} MB</p>
                             {file.notes && (
                               <p className="text-gray-300 text-sm mt-1">Notes: {file.notes}</p>
                             )}
@@ -175,7 +174,7 @@ export default function StatusChecker() {
                   <div className="flex justify-between items-center">
                     <span className="text-blue-200 font-medium">Total Copies:</span>
                     <span className="text-blue-100 font-bold text-lg">
-                      {printJob.files.reduce((total, file) => total + file.copies, 0)}
+                      {printJob.printFiles.reduce((total, file) => total + file.copies, 0)}
                     </span>
                   </div>
                 </div>

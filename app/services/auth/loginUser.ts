@@ -1,5 +1,6 @@
 import type { LoginResultT } from "~/schema/Login.schema";
 import axiosClient from "~/utils/api/axiosClient";
+import { extractErrorMessage } from "~/utils/formatting/extractErrorMessage";
 
 export async function loginUser(
   username: string,
@@ -15,10 +16,7 @@ export async function loginUser(
   } catch (error: any) {
     return {
       success: false,
-      error:
-        error.response?.data?.message ||
-        error.message ||
-        "Login failed",
+      error: extractErrorMessage(error, "Login failed"),
     };
   }
 }

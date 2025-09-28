@@ -12,11 +12,11 @@ export let mockOrders: PrintJobT[] = [
       name: "Juan Dela Cruz",
       email: "juan.delacruz@gmail.com",
     },
-    printFiles: [
+    printprintFiles: [
       {
         name: "thesis.pdf",
         path: "/uploads/thesis.pdf",
-        fileSize: 2.5,
+        printFilesize: 2.5,
         copies: 2,
         isColored: false,
         paperSize: "A4",
@@ -26,7 +26,7 @@ export let mockOrders: PrintJobT[] = [
       {
         name: "resume.docx",
         path: "/uploads/resume.docx",
-        fileSize: 0.3,
+        printFilesize: 0.3,
         copies: 1,
         isColored: true,
         paperSize: "Letter",
@@ -44,11 +44,11 @@ export let mockOrders: PrintJobT[] = [
       name: "Maria Santos",
       email: "maria.santos@yahoo.com",
     },
-    printFiles: [
+    printprintFiles: [
       {
         name: "poster.png",
         path: "/uploads/poster.png",
-        fileSize: 5.2,
+        printFilesize: 5.2,
         copies: 3,
         isColored: true,
         paperSize: "A3",

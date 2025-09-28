@@ -7,25 +7,25 @@ export const calculateStats = (printjobs: PrintJobT[]) => {
   const completedJobs = printjobs.filter((job) => job.status === "Completed").length;
   const cancelledJobs = printjobs.filter((job) => job.status === "Cancelled").length;
 
-  const totalFiles = printjobs.reduce(
+  const totalprintFiles = printjobs.reduce(
     (sum, job) => sum + job.printFiles.length,
     0
   );
-  const coloredFiles = printjobs.reduce(
+  const coloredprintFiles = printjobs.reduce(
     (sum, job) => sum + job.printFiles.filter((file) => file.isColored).length,
     0
   );
 
   const totalPages = printjobs.reduce(
     (sum, job) =>
-      sum + job.printFiles.reduce((fileSum, file) => fileSum + file.copies, 0),
+      sum + job.printFiles.reduce((printFilesum, file) => printFilesum + file.copies, 0),
     0
   );
   const coloredPages = printjobs.reduce(
     (sum, job) =>
       sum +
       job.printFiles.reduce(
-        (fileSum, file) => fileSum + (file.isColored ? file.copies : 0),
+        (printFilesum, file) => printFilesum + (file.isColored ? file.copies : 0),
         0
       ),
     0
@@ -39,9 +39,9 @@ export const calculateStats = (printjobs: PrintJobT[]) => {
   ).length;
 
   const revenue = printjobs.reduce((sum, job) => {
-    const jobRevenue = job.printFiles.reduce((fileSum, file) => {
+    const jobRevenue = job.printFiles.reduce((printFilesum, file) => {
       const pagePrice = file.isColored ? 0.25 : 0.1;
-      return fileSum + file.copies * pagePrice;
+      return printFilesum + file.copies * pagePrice;
     }, 0);
     return sum + jobRevenue;
   }, 0);
@@ -57,8 +57,8 @@ export const calculateStats = (printjobs: PrintJobT[]) => {
     uniqueCustomers,
     todayJobs,
     revenue: revenue.toFixed(2),
-    totalFiles,
-    coloredFiles,
+    totalprintFiles,
+    coloredprintFiles,
   };
 };
 

@@ -1,5 +1,6 @@
 import { useAlert } from "~/providers/AlertProvider";
 import axiosClient from "~/utils/api/axiosClient";
+import { extractErrorMessage } from "~/utils/formatting/extractErrorMessage";
 
 type UpdatePrintJobStatusT = {
     formData: FormData;
@@ -76,8 +77,7 @@ export async function updatePrintJobStatus({
         return {
             type: "error",
             title: "Update Failed",
-            description:
-                error?.response?.data?.message || error.message || "Unknown error",
+            description: extractErrorMessage(error, "Unknown error")
         };
     }
 }

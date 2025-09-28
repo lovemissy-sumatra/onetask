@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-export const PrintFileSchema = z.object({
+export const PrintprintFileschema = z.object({
   name: z.string(),
   path: z.string(),
-  fileSize: z.number().nonnegative(),
+  printFilesize: z.number().nonnegative(),
   copies: z.number().int().min(1),
   isColored: z.boolean(),
   isDownloaded: z.boolean(),
@@ -25,7 +25,7 @@ export const PrintJobFormSchema = z.object({
     isColored: z.boolean(),
     paperSize: z.enum(["A4", "Letter", "Long"]),
   }),
-  files: z.array(PrintFileSchema).min(1, { message: "Upload at least 1 file" }),
+  printFiles: z.array(PrintprintFileschema).min(1, { message: "Upload at least 1 file" }),
   createdAt: z.string(),
 });
 
@@ -43,7 +43,7 @@ export const PrintJobSchema = PrintJobFormSchema.omit({
 });
 
 export type PrintJobStatusT = z.infer<typeof statusEnum>;
-export type PrintFileT = z.infer<typeof PrintFileSchema>;
+export type PrintFileT = z.infer<typeof PrintprintFileschema>;
 export type PrintJobFormT = z.infer<typeof PrintJobFormSchema>;
 export type PrintJobT = z.infer<typeof PrintJobSchema>;
 

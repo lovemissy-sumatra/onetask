@@ -1,27 +1,24 @@
+import axiosClient from "~/utils/api/axiosClient";
+import { extractErrorMessage } from "~/utils/formatting/extractErrorMessage";
+
 export async function createPrintJob({ formData }: { formData: FormData }) {
     try {
-        const response = await fetch("http://localhost:5024/api/printjob/create", {
-            method: "POST",
-            body: formData,
-        });
+        const response = await axiosClient.post("api/printjob/create", formData, { headers: { "Content-Type": "multipart/form-data" }, });
 
-        if (response.ok) {
-            const result = await response.json();
+        return {
+            type: "success",
+            title: "Print Job Created",
+            description: `Print job created successfully! Reference code: ${response.data.referenceCode}`,
+        };
+    } catch (err: any) {
+        if (err.response) {
             return {
-                type: "success",
-                title: "Print Job Created",
-                description: `Print job created successfully! Reference code: ${result.referenceCode}`,
-                referenceCode: result.referenceCode,
+                type: "error",
+                title: "Create Failed",
+                description: `Failed to create print job: ${extractErrorMessage(err, "Unknown error")}`,
             };
         }
 
-        return {
-            type: "error",
-            title: "Create Failed",
-            description: `Failed to create print job: ${await response.text()}`,
-        };
-    } catch (err) {
-        console.error("Submission error:", err);
         return {
             type: "error",
             title: "Network Error",
