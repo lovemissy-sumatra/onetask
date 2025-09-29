@@ -5,7 +5,7 @@ type DateType = {
 export function getFormattedDateTime({ date }: DateType) {
     const d = new Date(date)
 
-    return d.toLocaleString("en-US", {
+    return d.toLocaleString("en-PH", {
         year: "numeric",
         month: "short",
         day: "numeric",

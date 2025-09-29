@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useState } from "react";
-import { useNavigate, type LoaderFunctionArgs } from "react-router";
+import { useNavigate } from "react-router";
 import { loginUser } from "~/services/auth/loginUser";
 import { LoginFormSchema, type LoginFormT } from "~/schema/Login.schema";
 import { ErrorMessage } from "~/components/shared/InlineErrorMessage";

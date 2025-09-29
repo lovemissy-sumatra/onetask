@@ -54,18 +54,19 @@ export function CreateAdminDialog({ onCreated }: { onCreated: () => void }) {
 
   const isFormDisabled = isSubmitting || isLoading;
 
- useEffect(() => {
-  if (fetcher.state === "idle" && fetcher.data != null) {
-    if (fetcher.data.ok) {
-      setIsLoading(false);
-      reset();
-      setOpen(false);
-      onCreated();
-    } else {
-      setIsLoading(false);
+  useEffect(() => {
+    if (fetcher.state === "idle" && fetcher.data != null) {
+      if (fetcher.data.success) {
+        setIsLoading(false);
+        reset();
+        setOpen(false);
+        onCreated();
+      } else {
+        setIsLoading(false);
+      }
     }
-  }
-}, [fetcher.state, fetcher.data, onCreated, reset]);
+  }, [fetcher.state, fetcher.data, onCreated, reset]);
+
 
 
   return (
@@ -88,7 +89,7 @@ export function CreateAdminDialog({ onCreated }: { onCreated: () => void }) {
           <DialogTitle>Create New Admin</DialogTitle>
         </DialogHeader>
 
-        {fetcher.data && !fetcher.data.ok && (
+        {fetcher.data && !fetcher.data.success && (
           <InlineAlertMessage
             alert={{
               type: fetcher.data.type || "error",

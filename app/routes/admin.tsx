@@ -1,5 +1,4 @@
 import { OrdersTable } from "../components/feature/admin/OrdersTable";
-import axiosClient, { setSSRRequestCookies } from "~/utils/api/axiosClient";
 import {
   redirect,
   useLoaderData,
@@ -52,6 +51,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     let admins: any[] = [];
     if (user?.role === "Superadmin") {
       const res = await client.get("/api/admin");
+      console.log({ res })
       admins = res.data;
     }
 
@@ -81,7 +81,7 @@ export async function action({ request }: ActionFunctionArgs) {
       const res = await client.post("/api/admin", { username, password, role });
       return { success: true, data: res.data };
     } catch (error: any) {
-      return { type: "error", title: "Error", description: extractErrorMessage(error, "Please try again")};
+      return { type: "error", title: "Error", description: extractErrorMessage(error, "Please try again") };
     }
   }
   if (intent === "pay" || intent === "status" || intent === "download") {

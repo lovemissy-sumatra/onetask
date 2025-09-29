@@ -17,8 +17,6 @@ import type { AlertData } from "~/providers/AlertProvider";
 import { updatePrintJobStatus } from "~/services/admin/updatePrintJobStatus";
 import { axiosSSR } from "~/utils/api/axiosSSR";
 
-
-
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const intent = formData.get("_intent");
@@ -61,7 +59,6 @@ export default function StatusChecker() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const initialReferenceCode = searchParams.get("referenceCode") || '';
-
 
   const {
     register,

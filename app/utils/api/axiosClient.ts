@@ -9,18 +9,10 @@ const axiosClient = axios.create({
   withCredentials: true,
 });
 
+// allows overwriting
 axiosClient.interceptors.request.use((configuration) => {
   configuration.withCredentials = true;
   return configuration;
 });
-
-export function setSSRRequestCookies(cookieHeader?: string) {
-  if (cookieHeader) {
-    axiosClient.defaults.headers.Cookie = cookieHeader;
-  } else {
-    delete axiosClient.defaults.headers.Cookie;
-  }
-}
-
 
 export default axiosClient;
