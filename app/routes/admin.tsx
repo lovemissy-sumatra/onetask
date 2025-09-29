@@ -26,6 +26,7 @@ import { updatePrintJobStatus } from "~/services/admin/updatePrintJobStatus";
 import { bulkDelete, deleteJob } from "~/services/admin/deletePrintJob";
 import { AdminsTable } from "~/components/feature/admin/AdminsTable";
 import { axiosSSR } from "~/utils/api/axiosSSR";
+import { Button } from "~/components/ui/button";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 
@@ -66,6 +67,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const _action = formData.get("_action");
+  const client = axiosSSR(request);
 
   if (_action === "createAdmin") {
     const username = formData.get("username");
@@ -81,9 +83,11 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   if (_action === "updateJobStatus") {
-    const { type, title, description } = await updatePrintJobStatus({ formData });
+    const client = axiosSSR(request);
+    const { type, title, description } = await updatePrintJobStatus({ formData, client });
     return { type, title, description };
   }
+
 
   return { error: "Unknown action" };
 }
@@ -120,20 +124,20 @@ export default function Admin() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button
+          <Button
             onClick={() => revalidator.revalidate()}
             className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors text-sm"
           >
             <RefreshCcw size={16} />
             Reload Data
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleLogout}
             className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors text-sm"
           >
             <LogOut size={16} />
             Logout
-          </button>
+          </Button>
         </div>
       </div>
 

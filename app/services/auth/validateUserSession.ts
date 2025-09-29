@@ -12,7 +12,6 @@ export async function validateUserSession(request?: Request): Promise<AuthResult
 
     return { user: response.data, success: true };
   } catch (error: any) {
-    console.error("Auth validation failed:", error);
     return { user: null, success: false };
   }
 }

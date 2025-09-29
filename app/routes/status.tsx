@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFetcher } from "react-router";
+import { useFetcher, useSearchParams } from "react-router";
 import { z } from "zod";
 import type { ActionFunctionArgs } from "react-router";
 import { Input } from "~/components/ui/input";
@@ -11,6 +11,10 @@ import { getFormattedDateTime } from "~/utils/formatting/getFormattedDateTime";
 import { getStatusColor } from "~/utils/formatting/getStatusColor";
 import { ReferenceCodeSchema, type PrintJobT, type ReferenceCodeFormT } from "~/schema/PrintJob.schema";
 import { ErrorMessage } from "~/components/shared/InlineErrorMessage";
+import { InlineAlertMessage } from "~/components/shared/InlineAlertMessage";
+import { Button } from "~/components/ui/button";
+import { LogoHeader } from "~/components/shared/Logo";
+import type { AlertData } from "~/providers/AlertProvider";
 
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -22,6 +26,10 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function StatusChecker() {
   const fetcher = useFetcher<typeof action>();
   const [searchPerformed, setSearchPerformed] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const initialReferenceCode = searchParams.get("referenceCode") || '';
+
 
   const {
     register,
@@ -31,12 +39,18 @@ export default function StatusChecker() {
   } = useForm<ReferenceCodeFormT>({
     resolver: zodResolver(ReferenceCodeSchema),
     defaultValues: {
-      referenceCode: "",
+      referenceCode: initialReferenceCode,
     },
   });
 
   const isSubmitting = fetcher.state === "submitting";
   const printJob = fetcher.data?.data as PrintJobT | null;
+
+  useEffect(() => {
+    if (initialReferenceCode) {
+      onSubmit({ referenceCode: initialReferenceCode });
+    }
+  }, [initialReferenceCode]);
 
   const onSubmit = (data: ReferenceCodeFormT) => {
     const formData = new FormData();
@@ -46,23 +60,22 @@ export default function StatusChecker() {
       method: 'POST',
     });
 
+    setSearchParams({ referenceCode: data.referenceCode });
+
     setSearchPerformed(true);
   };
 
   const handleNewSearch = () => {
-    reset();
+    setSearchParams({});
+    reset({ referenceCode: "" });
     setSearchPerformed(false);
-    window.location.reload();
+    fetcher.data = undefined;
   };
+
 
   return (
     <div className="p-5 rounded-xl flex flex-col items-center bg-white/5 h-full min-h-screen">
-      <h1 className="font-bold text-4xl bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 inline-block text-transparent bg-clip-text pb-3">
-        Check Print Job Status
-      </h1>
-      <p className="text-gray-600 text-center mb-8 max-w-md">
-        Enter your reference code to check the status of your print job
-      </p>
+      <LogoHeader context="Enter your reference code to check the status of your print job" />
 
       <div className="w-full max-w-2xl">
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 mb-8">
@@ -75,13 +88,13 @@ export default function StatusChecker() {
                 className="flex-1"
                 disabled={isSubmitting}
               />
-              <button
+              <Button
                 type="submit"
                 disabled={isSubmitting}
                 className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white px-6 py-2 rounded transition-colors whitespace-nowrap"
               >
                 {isSubmitting ? 'Checking...' : 'Check Status'}
-              </button>
+              </Button>
             </div>
             <ErrorMessage message={errors.referenceCode?.message} />
           </div>
@@ -90,10 +103,15 @@ export default function StatusChecker() {
         {searchPerformed && fetcher.data && (
           <div className="bg-white/10 rounded-lg p-6">
             {fetcher.data.type === 'error' && (
-              <div className="bg-red-100 text-red-700 border border-red-300 p-4 rounded-md mb-4">
-                {fetcher.data.description}
-              </div>
+              <InlineAlertMessage
+                alert={{
+                  type: fetcher.data.type || "error",
+                  title: fetcher.data.title || "Failed fetching printjob",
+                  description: fetcher.data.description || "Please try again"
+                }}
+              />
             )}
+
 
             {fetcher.data.type === 'success' && printJob && (
               <div className="space-y-6">
@@ -102,10 +120,16 @@ export default function StatusChecker() {
                     <h2 className="text-2xl font-bold text-white">Print Job Details</h2>
                     <p className="text-gray-300">Reference: {printJob.referenceCode}</p>
                   </div>
-                  <div className={`px-4 py-2 rounded-lg border font-medium ${getStatusColor(printJob.status)}`}>
+                  <div className={`px-3 py-1 rounded-sm border font-medium ${getStatusColor(printJob.status)}`}>
                     {printJob.status}
                   </div>
                 </div>
+
+                <InlineAlertMessage
+                  alert={fetcher.data as AlertData}
+                  printJob={printJob}
+                />
+
 
                 <div className="bg-white/5 rounded-lg p-4">
                   <h3 className="font-semibold text-white mb-3">Customer Information</h3>
@@ -182,12 +206,12 @@ export default function StatusChecker() {
             )}
 
             <div className="mt-6 text-center">
-              <button
+              <Button
                 onClick={handleNewSearch}
-                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition-colors"
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 transition-colors"
               >
                 Check Another Reference Code
-              </button>
+              </Button>
             </div>
           </div>
         )}

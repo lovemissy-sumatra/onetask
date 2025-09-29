@@ -1,17 +1,19 @@
-import { useAlert } from "~/providers/AlertProvider";
-import axiosClient from "~/utils/api/axiosClient";
+import type { AxiosInstance } from "axios";
 import { extractErrorMessage } from "~/utils/formatting/extractErrorMessage";
 
 type UpdatePrintJobStatusT = {
     formData: FormData;
+    client: AxiosInstance;
 };
 
 export async function updatePrintJobStatus({
     formData,
+    client
 }: UpdatePrintJobStatusT) {
     const intent = formData.get("_intent") as "status" | "pay" | "download" | null;
     const jobId = formData.get("jobId") as string | null;
     const filePath = formData.get("filePath") as string | null;
+
 
     if (!intent) {
         return {
@@ -33,7 +35,7 @@ export async function updatePrintJobStatus({
                         description: "You must provide a status value.",
                     };
                 }
-                res = await axiosClient.put(
+                res = await client.put(
                     `/api/printjob/${Number(jobId)}/status`,
                     JSON.stringify(status)
                 );
@@ -48,7 +50,7 @@ export async function updatePrintJobStatus({
                         description: "Cannot update payment without a jobId.",
                     };
                 }
-                res = await axiosClient.put(`/api/printjob/${jobId}/pay`);
+                res = await client.put(`/api/printjob/${jobId}/pay`);
                 break;
             }
 
@@ -61,7 +63,7 @@ export async function updatePrintJobStatus({
                     };
                 }
                 const fileId = formData.get("fileId") as string;
-                res = await axiosClient.put(`/api/printfile/${fileId}/downloaded`);
+                res = await client.put(`/api/printfile/${fileId}/downloaded`);
                 break;
             }
         }

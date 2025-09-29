@@ -1,7 +1,7 @@
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
-import { useFetcher } from "react-router";
+import { Link, useFetcher } from "react-router";
 import type { ActionFunctionArgs } from "react-router";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -12,11 +12,13 @@ import { useFileManager } from "~/hooks/useFileManager";
 import { ErrorMessage } from "~/components/shared/InlineErrorMessage";
 import { InlineAlertMessage } from "../components/shared/InlineAlertMessage";
 import type { AlertData } from "~/providers/AlertProvider";
+import { Button } from "~/components/ui/button";
+import { LogoHeader } from "~/components/shared/Logo";
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
-  const { type, description } = await createPrintJob({ formData })
-  return { type, description }
+  const { type, description, referenceCode } = await createPrintJob({ formData })
+  return { type, description, referenceCode }
 }
 
 export default function Home() {
@@ -27,8 +29,6 @@ export default function Home() {
     register,
     watch,
     handleSubmit,
-    getValues,
-    setValue,
     reset,
     formState: { errors },
   } = useForm<PrintJobFormT>({
@@ -92,9 +92,7 @@ export default function Home() {
 
   return (
     <div className="p-5 rounded-xl flex flex-col items-center bg-white/5 h-full min-h-screen">
-      <h1 className="font-bold text-4xl bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 inline-block text-transparent bg-clip-text pb-3">
-        PrintAway
-      </h1>
+      <LogoHeader context="" />
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 w-full max-w-lg">
         <div className="text-xs text-gray-500">
@@ -102,7 +100,7 @@ export default function Home() {
         </div>
         {fetcher.data && (
           <InlineAlertMessage
-            {...fetcher.data as AlertData}
+            alert={fetcher.data as AlertData}
           />
         )}
 
@@ -136,7 +134,8 @@ export default function Home() {
             onChange={addFile}
             accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
           />
-          <ErrorMessage message={errors.printFiles?.message as string} />
+          <ErrorMessage message={errors.printFiles?.message || errors.printFiles?.root?.message} />
+
 
           {uploadedprintFiles.length > 0 && (
             <div className="text-sm text-neutral-600">
@@ -161,13 +160,13 @@ export default function Home() {
                   <div key={file.id} className="flex flex-col gap-1 p-2 bg-neutral-50/5 rounded">
                     <div className="flex justify-between items-center p-2 bg-neutral-50/5 rounded">
                       <span>{file.name} ({file.printFilesize}MB)</span>
-                      <button
+                      <Button
                         type="button"
                         onClick={() => removeFile(index)}
                         className="text-red-500 hover:text-red-700 text-sm"
                       >
                         Remove
-                      </button>
+                      </Button>
                     </div>
                     <Label>Notes (optional)</Label>
                     <Input
@@ -221,18 +220,18 @@ export default function Home() {
         {!useDefault &&
           printFiles.map((file, index) => {
             const currentPaperSize = watch(`printFiles.${index}.paperSize`);
-            
+
             return (
               <div key={file.id} className="border p-3 rounded-md flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                   <h4 className="font-medium">{file.name}</h4>
-                  <button
+                  <Button
                     type="button"
                     onClick={() => removeFile(index)}
                     className="text-red-500 hover:text-red-700 text-sm"
                   >
                     Remove
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="text-sm text-neutral-600">
@@ -259,10 +258,10 @@ export default function Home() {
                   name={`printFiles.${index}.paperSize`}
                   render={({ field }) => {
                     return (
-                      <Select 
+                      <Select
                         onValueChange={(value) => {
                           field.onChange(value);
-                        }} 
+                        }}
                         value={field.value}
                       >
                         <SelectTrigger className="w-[180px]">
@@ -288,13 +287,20 @@ export default function Home() {
             );
           })}
 
-        <button
+        <Button
           type="submit"
           disabled={isSubmitting || uploadedprintFiles.length === 0}
-          className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white px-4 py-2 rounded transition-colors"
+          className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white px-4 py-2 transition-colors"
         >
           {isSubmitting ? 'Submitting...' : 'Submit Print Job'}
-        </button>
+        </Button>
+
+        <Button asChild className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 transition-colors w-auto">
+          <Link to={fetcher.data?.referenceCode ? `/status?referenceCode=${fetcher.data.referenceCode}` : "/status"} target="_blank">
+            {fetcher?.data?.referenceCode ? 'View status' : 'Check Reference Code'}
+          </Link>
+        </Button>
+
       </form>
     </div>
   );

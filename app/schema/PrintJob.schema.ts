@@ -4,7 +4,7 @@ export const PrintprintFileschema = z.object({
   name: z.string(),
   path: z.string(),
   printFilesize: z.number().nonnegative(),
-  copies: z.number().int().min(1),
+  copies: z.number({ message: "1 or more copies is required" }).int({ message: "1 or more copies is required" }).min(1,{ message: "1 or more copies is required" }),
   isColored: z.boolean(),
   isDownloaded: z.boolean(),
   paperSize: z.enum(["A4", "Long", "Letter"]),
@@ -21,7 +21,7 @@ export const PrintJobFormSchema = z.object({
   customer: CustomerSchema,
   useDefaultOptions: z.boolean(),
   defaultOptions: z.object({
-    copies: z.number().int().min(1, { message: "1 or more copies is required" }),
+    copies: z.number({ message: "1 or more copies is required" }).int({ message: "1 or more copies is required" }).min(1, { message: "1 or more copies is required" }),
     isColored: z.boolean(),
     paperSize: z.enum(["A4", "Letter", "Long"]),
   }),

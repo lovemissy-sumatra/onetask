@@ -15,6 +15,7 @@ export type AlertData = {
   type: AlertType;
   title: string;
   description?: string;
+  referenceCode?: string;
 };
 
 type AlertContextType = {

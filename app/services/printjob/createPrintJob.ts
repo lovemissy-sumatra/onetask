@@ -9,6 +9,7 @@ export async function createPrintJob({ formData }: { formData: FormData }) {
             type: "success",
             title: "Print Job Created",
             description: `Print job created successfully! Reference code: ${response.data.referenceCode}`,
+            referenceCode: response.data.referenceCode
         };
     } catch (err: any) {
         if (err.response) {
