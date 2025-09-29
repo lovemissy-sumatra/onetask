@@ -107,7 +107,7 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
                                         value="Cancelled"
                                         disabled={!(job.status === "Processing" && job.paymentStatus === "Paid")}
                                     >
-                                        Cancelled (Refunded)
+                                        Cancelled
                                     </SelectItem>
                                 </SelectContent>
                             </Select>

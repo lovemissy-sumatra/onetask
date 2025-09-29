@@ -6,6 +6,7 @@ import {
   getSortedRowModel,
   useReactTable,
   type SortingState,
+  getFilteredRowModel,
 } from "@tanstack/react-table"
 import { useState, useMemo } from "react"
 import { Button } from "~/components/ui/button"
@@ -169,6 +170,7 @@ export function OrdersTable({ data, onDelete, onBulkDelete }: OrdersTableProps) 
   ], [])
 
   const memoizedData = useMemo(() => data, [data])
+   const [globalFilter, setGlobalFilter] = useState("")
 
   const table = useReactTable({
     data: memoizedData,
@@ -176,6 +178,7 @@ export function OrdersTable({ data, onDelete, onBulkDelete }: OrdersTableProps) 
     state: {
       sorting,
       rowSelection,
+      globalFilter
     },
     onSortingChange: setSorting,
     onRowSelectionChange: setRowSelection,
@@ -183,6 +186,8 @@ export function OrdersTable({ data, onDelete, onBulkDelete }: OrdersTableProps) 
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     enableRowSelection: true,
+    onGlobalFilterChange: setGlobalFilter,
+    getFilteredRowModel: getFilteredRowModel(),
   })
 
   const handleSingleDelete = async (id: string, referenceCode: string) => {
@@ -249,6 +254,15 @@ export function OrdersTable({ data, onDelete, onBulkDelete }: OrdersTableProps) 
 
   return (
     <div>
+       <div className="mb-4 flex justify-between items-center">
+        <input
+          type="text"
+          value={globalFilter ?? ""}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          placeholder="Search orders..."
+          className="border rounded px-3 py-2 w-1/3"
+        />
+      </div>
       {selectedRowsCount > 0 && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
           <span className="text-blue-700 font-medium">

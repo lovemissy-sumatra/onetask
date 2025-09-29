@@ -8,6 +8,7 @@ import {
   getSortedRowModel,
   useReactTable,
   type SortingState,
+  getFilteredRowModel,
 } from "@tanstack/react-table"
 import { useState, useMemo } from "react"
 import { Button } from "~/components/ui/button"
@@ -96,23 +97,35 @@ export function AdminsTable({ data }: AdminsTableProps) {
   ], [])
 
   const memoizedData = useMemo(() => data, [data])
+  const [globalFilter, setGlobalFilter] = useState("")
 
   const table = useReactTable({
     data: memoizedData,
     columns,
-    state: { sorting },
+    state: { sorting, globalFilter },
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    onGlobalFilterChange: setGlobalFilter,
+    getFilteredRowModel: getFilteredRowModel(),
   })
 
   return (
     <div>
-      <div className="p-2 border-b border-white/20 flex justify-between items-centerrounded-t-lg">
+
+      <div className="p-2 border-b border-white/20 flex justify-between items-center">
+        <input
+          type="text"
+          value={globalFilter ?? ""}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          placeholder="Search admins..."
+          className="border rounded px-3 py-2 w-1/3"
+        />
 
         <CreateAdminDialog onCreated={() => window.location.reload()} />
       </div>
+
 
       <div className="overflow-hidden rounded-md border">
         <Table>
