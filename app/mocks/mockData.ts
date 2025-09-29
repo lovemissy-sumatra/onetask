@@ -4,15 +4,16 @@ import { getFormattedDateTime } from "~/utils/formatting/getFormattedDateTime";
 export let mockOrders: PrintJobT[] = [
   {
     id: "1",
-    referenceId: "PJ123",
-    isPaid: false,
+    referenceCode: "PJ123",
+    paymentStatus: "Unpaid",
     status: "Pending",
     createdAt: getFormattedDateTime({ date: new Date() }),
+    updatedAt: new Date(),
     customer: {
       name: "Juan Dela Cruz",
       email: "juan.delacruz@gmail.com",
     },
-    printprintFiles: [
+    printFiles: [
       {
         name: "thesis.pdf",
         path: "/uploads/thesis.pdf",
@@ -22,6 +23,8 @@ export let mockOrders: PrintJobT[] = [
         paperSize: "A4",
         notes: "Print double-sided",
         createdAt: getFormattedDateTime({ date: new Date }),
+
+        isDownloaded: false,
       },
       {
         name: "resume.docx",
@@ -31,29 +34,33 @@ export let mockOrders: PrintJobT[] = [
         isColored: true,
         paperSize: "Letter",
         createdAt: getFormattedDateTime({ date: new Date }),
+        isDownloaded: false,
       },
     ],
   },
   {
     id: "2",
-    referenceId: "PJ124",
-    isPaid: true,
+    referenceCode: "PJ124",
+    paymentStatus: "Paid",
     status: "Completed",
     createdAt: getFormattedDateTime({ date: new Date() }),
+    updatedAt: new Date(),
     customer: {
       name: "Maria Santos",
       email: "maria.santos@yahoo.com",
     },
-    printprintFiles: [
+    printFiles: [
       {
         name: "poster.png",
         path: "/uploads/poster.png",
         printFilesize: 5.2,
         copies: 3,
         isColored: true,
-        paperSize: "A3",
+        paperSize: "A4",
         notes: "Use glossy paper",
-         createdAt: getFormattedDateTime({date: new Date}),
+        createdAt: getFormattedDateTime({ date: new Date }),
+
+        isDownloaded: false,
       },
     ],
   },

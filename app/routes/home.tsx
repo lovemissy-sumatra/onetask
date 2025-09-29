@@ -118,13 +118,13 @@ export default function Home() {
           <ErrorMessage message={errors.customer?.email?.message} />
         </div>
 
-        <Label className="">Upload printFiles</Label>
+        <Label className="">Upload Files</Label>
         <div className="flex flex-col gap-1">
           <Label
             className="border border-dashed border-neutral-500 rounded-xl h-20 flex items-center justify-center cursor-pointer hover:border-neutral-400 transition-colors"
             htmlFor="uploadprintFiles"
           >
-            Click here to upload printFiles
+            Click here to upload files
           </Label>
           <Input
             type="file"
@@ -154,7 +154,7 @@ export default function Home() {
             <h3 className="font-medium">Default Print Options</h3>
 
             <div className="mt-2">
-              <h4 className="text-sm font-medium mb-2">printFiles to be printed:</h4>
+              <h4 className="text-sm font-medium mb-2">Files to be printed:</h4>
               <ul className="text-sm space-y-1">
                 {printFiles.map((file, index) => (
                   <div key={file.id} className="flex flex-col gap-1 p-2 bg-neutral-50/5 rounded">

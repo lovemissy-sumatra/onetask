@@ -21,13 +21,12 @@ import { getFormattedDateTime } from "~/utils/formatting/getFormattedDateTime";
 import { useFetcher, useRevalidator } from "react-router";
 import apiUrl from "~/utils/api/apiUrl";
 import { useAlert } from "~/providers/AlertProvider";
-import { useEffect, type FormEvent } from "react";
+import { useEffect } from "react";
 
 export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
     const job = row.original;
     const fetcher = useFetcher();
     const revalidator = useRevalidator();
-
     const { showAlert } = useAlert();
 
     useEffect(() => {
@@ -36,7 +35,6 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
             if (type && title && description) {
                 showAlert({ type, title, description });
             }
-
             revalidator.revalidate();
         }
     }, [fetcher.data]);
@@ -62,8 +60,8 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
                             <span className="font-medium">Status:</span> {job.status}
                         </p>
                         <p>
-                            <span className="font-medium">Paid:</span>{" "}
-                            {job.isPaid ? "Yes" : "No"}
+                            <span className="font-medium">Payment Status:</span>{" "}
+                            {job.paymentStatus}
                         </p>
                         <p>
                             <span className="font-medium">Created At:</span>{" "}
@@ -75,31 +73,53 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
 
                     <div className="space-y-2">
                         <h2 className="text-md font-semibold">Update Status</h2>
-                        <fetcher.Form
-                            method="post"
-                            className="flex gap-2"
-
-                        >
-                            <input type="hidden" name="_action" value="updateJobStatus" />
+                        <fetcher.Form method="post" className="flex gap-2 items-center">
                             <input type="hidden" name="_intent" value="status" />
                             <input type="hidden" name="jobId" value={job.id} />
-                            <Select name="status" defaultValue={job.status}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue />
+
+                            <Select name="newStatus" defaultValue={job.status}>
+                                <SelectTrigger className="w-[200px]">
+                                    <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="Pending">Pending</SelectItem>
-                                    <SelectItem value="Processing">Processing</SelectItem>
-                                    <SelectItem value="Completed">Completed</SelectItem>
-                                    <SelectItem value="Cancelled">Cancelled</SelectItem>
+                                    <SelectItem value="Pending" disabled>
+                                        Pending
+                                    </SelectItem>
+
+                                    <SelectItem
+                                        value="Processing"
+                                        disabled={!(job.status === "Pending" && job.paymentStatus === "Paid")}
+                                    >
+                                        Processing
+                                    </SelectItem>
+
+                                    <SelectItem
+                                        value="Completed"
+                                        disabled={
+                                            !(
+                                                (job.status === "Pending" && job.paymentStatus === "Paid") ||
+                                                (job.status === "Processing" && job.paymentStatus === "Paid")
+                                            )
+                                        }
+                                    >
+                                        Completed
+                                    </SelectItem>
+
+                                    <SelectItem
+                                        value="Cancelled"
+                                        disabled={!(job.status === "Processing" && job.paymentStatus === "Paid")}
+                                    >
+                                        Cancelled (Refunded)
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
+
                             <Button
                                 type="submit"
+                                disabled={fetcher.state !== "idle" || job.status === "Cancelled" || job.status === "Pending" || job.status === "Completed"}
                                 className="ml-2"
-                                disabled={fetcher.state !== "idle"}
                             >
-                                Save
+                                {fetcher.state === "submitting" ? "Saving..." : "Save"}
                             </Button>
                         </fetcher.Form>
                     </div>
@@ -111,12 +131,16 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
                         <fetcher.Form method="post">
                             <input type="hidden" name="_intent" value="pay" />
                             <input type="hidden" name="jobId" value={job.id} />
-                            <input type="hidden" name="_action" value="updateJobStatus" />
+                            <input type="hidden" name="_intent" value="updateJobStatus" />
                             <Button
                                 type="submit"
-                                disabled={job.isPaid || fetcher.state !== "idle"}
+                                disabled={job.paymentStatus !== "Unpaid" || fetcher.state !== "idle" || job.status === "Cancelled"}
                             >
-                                {job.isPaid ? "Paid" : "Mark as Paid"}
+                                {job.paymentStatus === "Paid"
+                                    ? "Paid"
+                                    : job.paymentStatus === "Refunded"
+                                        ? "Refunded"
+                                        : "Mark as Paid"}
                             </Button>
                         </fetcher.Form>
                     </div>
@@ -124,7 +148,7 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
                     <Separator />
 
                     <div>
-                        <h2 className="text-md font-semibold mb-2">printFiles</h2>
+                        <h2 className="text-md font-semibold mb-2">Print Files</h2>
                         <ul className="space-y-2">
                             {job.printFiles?.map((file: any) => (
                                 <li key={file.id} className="rounded border p-2 space-y-1">
@@ -148,17 +172,19 @@ export function PrintJobDialog({ row }: { row: Row<PrintJobT> }) {
                                         </p>
                                     )}
 
-                                    <fetcher.Form
-                                        method="post"
-                                    >
+                                    <fetcher.Form method="post">
                                         <input type="hidden" name="_intent" value="download" />
                                         <input type="hidden" name="fileId" value={file.id} />
                                         <input type="hidden" name="filePath" value={file.path} />
-                                        <input type="hidden" name="_action" value="updateJobStatus" />
+                                        <input
+                                            type="hidden"
+                                            name="_intent"
+                                            value="updateJobStatus"
+                                        />
                                         <Button
                                             variant="secondary"
                                             size="sm"
-                                            disabled={!job.isPaid || fetcher.state !== "idle"}
+                                            disabled={job.paymentStatus !== "Paid" || fetcher.state !== "idle"}
                                             type="submit"
                                             onClick={() =>
                                                 window.open(`${apiUrl}${file.path}`, "_blank")

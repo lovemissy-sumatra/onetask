@@ -12,10 +12,6 @@ import { Eye, EyeClosed } from "lucide-react";
 import { InlineAlertMessage } from "~/components/shared/InlineAlertMessage";
 import { LogoHeader } from "~/components/shared/Logo";
 
-// export async function loader({ request }: LoaderFunctionArgs) {
-//   return { isAuthenticated: false };
-// }
-
 export default function Login() {
   const navigate = useNavigate();
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -37,6 +33,7 @@ export default function Login() {
 
     try {
       const result = await loginUser(data.username, data.password);
+     
       if (result.success) {
         navigate('/admin', { replace: true });
       } else {

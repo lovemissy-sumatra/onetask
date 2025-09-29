@@ -4,7 +4,7 @@ export const PrintprintFileschema = z.object({
   name: z.string(),
   path: z.string(),
   printFilesize: z.number().nonnegative(),
-  copies: z.number({ message: "1 or more copies is required" }).int({ message: "1 or more copies is required" }).min(1,{ message: "1 or more copies is required" }),
+  copies: z.number({ message: "1 or more copies is required" }).int({ message: "1 or more copies is required" }).min(1, { message: "1 or more copies is required" }),
   isColored: z.boolean(),
   isDownloaded: z.boolean(),
   paperSize: z.enum(["A4", "Long", "Letter"]),
@@ -30,6 +30,13 @@ export const PrintJobFormSchema = z.object({
 });
 
 export const statusEnum = z.enum(["Pending", "Processing", "Completed", "Cancelled"]);
+export const paymentStatusEnum = z.enum([
+  "Unpaid",
+  "Paid",
+  "Refunded",
+]);
+
+export type PaymentStatusT = z.infer<typeof paymentStatusEnum>
 
 export const PrintJobSchema = PrintJobFormSchema.omit({
   useDefaultOptions: true,
@@ -38,7 +45,7 @@ export const PrintJobSchema = PrintJobFormSchema.omit({
   id: z.string(),
   referenceCode: z.string(),
   status: statusEnum,
-  isPaid: z.boolean(),
+  paymentStatus: paymentStatusEnum,
   updatedAt: z.date(),
 });
 

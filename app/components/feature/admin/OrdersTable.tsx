@@ -19,7 +19,7 @@ import {
 } from "~/components/ui/table"
 import { getFormattedDateTime } from "~/utils/formatting/getFormattedDateTime"
 import { PrintJobDialog } from "./PrintJobDialog"
-import type { PrintJobT } from "~/schema/PrintJob.schema"
+import type { PaymentStatusT, PrintJobT } from "~/schema/PrintJob.schema"
 import { useAlert } from "~/providers/AlertProvider"
 import { Trash2, Trash } from "lucide-react"
 import { extractErrorMessage } from "~/utils/formatting/extractErrorMessage"
@@ -102,8 +102,8 @@ export function OrdersTable({ data, onDelete, onBulkDelete }: OrdersTableProps) 
         return (
           <span
             className={`px-2 py-1 rounded text-xs ${status === "paid"
-                ? "bg-green-100 text-green-700"
-                : "bg-yellow-100 text-yellow-700"
+              ? "bg-green-100 text-green-700"
+              : "bg-yellow-100 text-yellow-700"
               }`}
           >
             {status}
@@ -112,15 +112,21 @@ export function OrdersTable({ data, onDelete, onBulkDelete }: OrdersTableProps) 
       },
     },
     {
-      accessorKey: "isPaid",
+      accessorKey: "paymentStatus",
       header: "Payment",
       cell: ({ row }) => {
-        const paid = row.getValue("isPaid") as boolean
-        return paid ? (
-          <span className="text-green-600 font-medium">Paid</span>
-        ) : (
-          <span className="text-red-600 font-medium">Unpaid</span>
-        )
+        const status = row.getValue("paymentStatus") as PaymentStatusT;
+
+        switch (status) {
+          case "Paid":
+            return <span className="text-green-600 font-medium">Paid</span>;
+          case "Unpaid":
+            return <span className="text-red-600 font-medium">Unpaid</span>;
+          case "Refunded":
+            return <span className="text-yellow-600 font-medium">Refunded</span>;
+          default:
+            return <span className="text-gray-500 font-medium">{status}</span>;
+        }
       },
     },
     {

@@ -31,6 +31,7 @@ import { Button } from "~/components/ui/button";
 export async function loader({ request }: LoaderFunctionArgs) {
 
   const { user, success } = await validateUserSession(request);
+
   if (!user) {
     throw redirect("/login");
   }
@@ -66,10 +67,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
-  const _action = formData.get("_action");
+  const intent = formData.get("_intent");
   const client = axiosSSR(request);
 
-  if (_action === "createAdmin") {
+  if (intent === "createAdmin") {
     const username = formData.get("username");
     const password = formData.get("password");
     const role = formData.get("role") || "Admin";
@@ -81,12 +82,11 @@ export async function action({ request }: ActionFunctionArgs) {
       return { error: "Could not create admin", status: error?.response?.status };
     }
   }
-
-  if (_action === "updateJobStatus") {
-    const client = axiosSSR(request);
+  if (intent === "pay" || intent === "status" || intent === "download") {
     const { type, title, description } = await updatePrintJobStatus({ formData, client });
     return { type, title, description };
   }
+
 
 
   return { error: "Unknown action" };

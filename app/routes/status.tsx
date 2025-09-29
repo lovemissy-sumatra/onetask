@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFetcher, useSearchParams } from "react-router";
-import { z } from "zod";
 import type { ActionFunctionArgs } from "react-router";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -15,12 +14,45 @@ import { InlineAlertMessage } from "~/components/shared/InlineAlertMessage";
 import { Button } from "~/components/ui/button";
 import { LogoHeader } from "~/components/shared/Logo";
 import type { AlertData } from "~/providers/AlertProvider";
+import { updatePrintJobStatus } from "~/services/admin/updatePrintJobStatus";
+import { axiosSSR } from "~/utils/api/axiosSSR";
+
 
 
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
-  return await checkReferenceCode({ formData })
+  const intent = formData.get("_intent");
 
+  const client = axiosSSR(request);
+
+  if (intent === "status" || intent === "pay" || intent === "download") {
+    const result = await updatePrintJobStatus({ formData, client });
+
+    if (result.type === "success") {
+      const referenceCode = formData.get("referenceCode");
+      const jobId = formData.get("jobId");
+
+      if (referenceCode) {
+        const checkFormData = new FormData();
+        checkFormData.append("referenceCode", referenceCode.toString());
+        return await checkReferenceCode({ formData: checkFormData });
+      }
+
+      if (jobId) {
+        const res = await client.get(`/api/printjob/${jobId}`);
+        return {
+          type: "success",
+          title: "Print Job Updated",
+          description: "The status was updated successfully.",
+          data: res.data,
+        };
+      }
+    }
+
+    return result;
+  }
+
+  return await checkReferenceCode({ formData });
 }
 
 export default function StatusChecker() {
@@ -71,6 +103,21 @@ export default function StatusChecker() {
     setSearchPerformed(false);
     fetcher.data = undefined;
   };
+
+  const handleCancel = () => {
+    if (!printJob) return;
+
+    const formData = new FormData();
+    formData.append("_intent", "status");
+    formData.append("jobId", String(printJob.id));
+    formData.append("newStatus", "Cancelled");
+    formData.append("referenceCode", printJob.referenceCode);
+
+    fetcher.submit(formData, {
+      method: "POST",
+    });
+  };
+
 
 
   return (
@@ -202,12 +249,24 @@ export default function StatusChecker() {
                     </span>
                   </div>
                 </div>
+
+                {printJob.status === "Pending" && (
+                  <Button
+                    type="button"
+                    onClick={handleCancel}
+                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 transition-colors"
+                  >
+                    Cancel Print Job
+                  </Button>
+                )}
+
               </div>
             )}
 
             <div className="mt-6 text-center">
               <Button
                 onClick={handleNewSearch}
+                type="button"
                 className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 transition-colors"
               >
                 Check Another Reference Code

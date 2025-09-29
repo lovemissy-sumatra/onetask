@@ -27,7 +27,7 @@ export async function updatePrintJobStatus({
         let res;
         switch (intent) {
             case "status": {
-                const status = formData.get("status");
+                const status = formData.get("newStatus");
                 if (!status) {
                     return {
                         type: "error",
@@ -75,7 +75,6 @@ export async function updatePrintJobStatus({
             data: res?.data,
         };
     } catch (error: any) {
-        console.error("Update failed:", error);
         return {
             type: "error",
             title: "Update Failed",
