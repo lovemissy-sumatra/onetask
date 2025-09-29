@@ -27,6 +27,7 @@ import { bulkDelete, deleteJob } from "~/services/admin/deletePrintJob";
 import { AdminsTable } from "~/components/feature/admin/AdminsTable";
 import { axiosSSR } from "~/utils/api/axiosSSR";
 import { Button } from "~/components/ui/button";
+import { extractErrorMessage } from "~/utils/formatting/extractErrorMessage";
 
 export async function loader({ request }: LoaderFunctionArgs) {
 
@@ -78,16 +79,15 @@ export async function action({ request }: ActionFunctionArgs) {
     try {
       const client = axiosSSR(request);
       const res = await client.post("/api/admin", { username, password, role });
+      return { success: true, data: res.data };
     } catch (error: any) {
-      return { error: "Could not create admin", status: error?.response?.status };
+      return { type: "error", title: "Error", description: extractErrorMessage(error, "Please try again")};
     }
   }
   if (intent === "pay" || intent === "status" || intent === "download") {
     const { type, title, description } = await updatePrintJobStatus({ formData, client });
     return { type, title, description };
   }
-
-
 
   return { error: "Unknown action" };
 }
@@ -222,19 +222,18 @@ export default function Admin() {
         </div>
       </div>
 
-      <div className="bg-white/10 rounded-lg border border-white/20">
-        <div className="p-6 border-b border-white/20">
-          <h2 className="text-xl font-semibold text-white">Admins</h2>
-          <p className="text-gray-400 text-sm mt-1">
-            View, Create Admin here
-          </p>
-        </div>
-        <div className="p-6">
-          {user.role === "Superadmin" && <AdminsTable data={admins} />}
-        </div>
-      </div>
-
-
+      {user.role === "Superadmin" &&
+        (<div className="bg-white/10 rounded-lg border border-white/20">
+          <div className="p-6 border-b border-white/20">
+            <h2 className="text-xl font-semibold text-white">Admins</h2>
+            <p className="text-gray-400 text-sm mt-1">
+              View, Create Admin here
+            </p>
+          </div>
+          <div className="p-6">
+            <AdminsTable data={admins} />
+          </div>
+        </div>)}
     </div>
   );
 }

@@ -20,23 +20,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { Eye, EyeClosed } from "lucide-react";
+import { InlineAlertMessage } from "~/components/shared/InlineAlertMessage";
 
 export function CreateAdminDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);
   const fetcher = useFetcher();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const {
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     reset,
   } = useForm<CreateAdminFormT>({
     resolver: zodResolver(createAdminSchema),
-    defaultValues: { role: "Admin" },
+    defaultValues: { username: "", password: "", role: "Admin" },
   });
 
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+
   const onSubmit = (data: CreateAdminFormT) => {
+    setIsLoading(true);
     const formData = new FormData();
     formData.append("_intent", "createAdmin");
     formData.append("username", data.username);
@@ -46,16 +52,34 @@ export function CreateAdminDialog({ onCreated }: { onCreated: () => void }) {
     fetcher.submit(formData, { method: "post" });
   };
 
-  useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.error == null && fetcher.data != null) {
-      setOpen(false);
+  const isFormDisabled = isSubmitting || isLoading;
+
+ useEffect(() => {
+  if (fetcher.state === "idle" && fetcher.data != null) {
+    if (fetcher.data.ok) {
+      setIsLoading(false);
       reset();
+      setOpen(false);
       onCreated();
+    } else {
+      setIsLoading(false);
     }
-  }, [fetcher.state, fetcher.data, reset, onCreated]);
+  }
+}, [fetcher.state, fetcher.data, onCreated, reset]);
+
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        setOpen(isOpen);
+        if (!isOpen) {
+          reset();
+          setIsLoading(false);
+          setShowPassword(false);
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button variant="default">+ Add Admin</Button>
       </DialogTrigger>
@@ -64,10 +88,20 @@ export function CreateAdminDialog({ onCreated }: { onCreated: () => void }) {
           <DialogTitle>Create New Admin</DialogTitle>
         </DialogHeader>
 
+        {fetcher.data && !fetcher.data.ok && (
+          <InlineAlertMessage
+            alert={{
+              type: fetcher.data.type || "error",
+              title: fetcher.data.title || "Error",
+              description: fetcher.data.description || "Please try again",
+            }}
+          />
+        )}
+
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="flex flex-col gap-1">
             <Label>Username</Label>
-            <Input {...register("username")} />
+            <Input {...register("username")} disabled={isFormDisabled} />
             {errors.username && (
               <p className="text-red-500 text-sm">{errors.username.message}</p>
             )}
@@ -75,7 +109,23 @@ export function CreateAdminDialog({ onCreated }: { onCreated: () => void }) {
 
           <div className="flex flex-col gap-1">
             <Label>Password</Label>
-            <Input type="password" {...register("password")} />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                {...register("password")}
+                disabled={isFormDisabled}
+              />
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute top-0 right-0"
+                disabled={isFormDisabled}
+              >
+                {showPassword ? <Eye color="white" /> : <EyeClosed color="white" />}
+              </Button>
+            </div>
             {errors.password && (
               <p className="text-red-500 text-sm">{errors.password.message}</p>
             )}
@@ -87,7 +137,11 @@ export function CreateAdminDialog({ onCreated }: { onCreated: () => void }) {
               name="role"
               control={control}
               render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  disabled={isFormDisabled}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
@@ -103,7 +157,11 @@ export function CreateAdminDialog({ onCreated }: { onCreated: () => void }) {
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={fetcher.state !== "idle"}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isFormDisabled || fetcher.state !== "idle"}
+          >
             {fetcher.state === "submitting" ? "Creating..." : "Create"}
           </Button>
         </form>
